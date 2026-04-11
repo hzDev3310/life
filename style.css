@@ -1,0 +1,217 @@
+/* style.css */
+:root {
+    --emerald-primary: #0F5132;
+    --emerald-light: #198754;
+    --dark-bg: #121212;
+    --darker-bg: #0a0a0a;
+    --text-primary: #f8f9fa;
+    --text-muted: #a0a0a0;
+    --danger-red: #dc3545;
+}
+
+body {
+    background-color: var(--dark-bg);
+    color: var(--text-primary);
+    font-family: 'Inter', sans-serif;
+    overflow-x: hidden;
+}
+
+.font-outfit {
+    font-family: 'Outfit', sans-serif;
+}
+
+.bg-darker {
+    background-color: var(--darker-bg) !important;
+}
+
+.text-emerald {
+    color: var(--emerald-light) !important;
+}
+
+.bg-emerald {
+    background-color: var(--emerald-primary) !important;
+}
+
+.btn-emerald {
+    background-color: var(--emerald-primary);
+    color: #fff;
+    border: none;
+    transition: background-color 0.2s ease, transform 0.1s ease;
+}
+
+.btn-emerald:hover, .btn-emerald:focus {
+    background-color: var(--emerald-light);
+    color: #fff;
+}
+
+.btn-emerald:active {
+    transform: scale(0.98);
+}
+
+.wrapper {
+    max-width: 600px;
+}
+
+/* Task Item */
+.task-item {
+    background-color: #1e1e1e;
+    border: 1px solid #333;
+    border-radius: 12px;
+    padding: 16px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+    position: relative;
+    overflow: hidden;
+}
+
+.task-item:hover {
+    transform: translateY(-2px);
+    border-color: #555;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+}
+
+/* Checkbox Styling */
+.task-checkbox-container {
+    flex-shrink: 0;
+}
+
+.custom-checkbox {
+    appearance: none;
+    -webkit-appearance: none;
+    width: 28px;
+    height: 28px;
+    border: 2px solid #555;
+    border-radius: 50%;
+    outline: none;
+    cursor: pointer;
+    background-color: transparent;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+}
+
+.custom-checkbox:hover {
+    border-color: var(--emerald-light);
+}
+
+.custom-checkbox:checked {
+    background-color: var(--emerald-light);
+    border-color: var(--emerald-light);
+}
+
+.custom-checkbox:checked::after {
+    content: '✓';
+    color: #fff;
+    font-size: 16px;
+    font-weight: bold;
+    position: absolute;
+}
+
+/* Completed State */
+.task-item.completed {
+    opacity: 0.6;
+    border-color: #333 !important;
+}
+
+.task-item.completed:hover {
+    transform: none;
+    box-shadow: none;
+}
+
+.task-item.completed .task-title {
+    text-decoration: line-through;
+    color: var(--text-muted);
+}
+
+/* Missed Task State */
+.task-item.missed {
+    border-color: var(--danger-red) !important;
+    background-color: rgba(220, 53, 69, 0.05); /* faint red background */
+}
+
+/* Workday Focus Style */
+.task-item.workday-focus:not(.completed) {
+    border-left: 4px solid var(--emerald-light);
+}
+
+.workday-badge {
+    color: var(--emerald-light);
+    font-size: 0.9rem;
+    margin-left: 6px;
+    opacity: 0.8;
+}
+
+/* Typography in Tasks */
+.task-title {
+    font-size: 1.1rem;
+    font-weight: 500;
+    margin-bottom: 4px;
+    transition: all 0.3s ease;
+}
+
+.task-time {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    font-weight: 600;
+}
+
+/* Delete Button */
+.btn-delete {
+    background: transparent;
+    border: none;
+    color: #555;
+    padding: 8px;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+}
+.btn-delete:hover {
+    color: var(--danger-red);
+    background: rgba(220, 53, 69, 0.1);
+}
+
+/* Dopamine Modal */
+.dopamine-modal-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+}
+
+.dopamine-modal-backdrop.show {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.dopamine-modal-content {
+    min-width: 300px;
+    max-width: 90%;
+    transform: scale(0.8) translateY(20px);
+    opacity: 0;
+    transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.3s ease;
+}
+
+.dopamine-modal-backdrop.show .dopamine-modal-content {
+    transform: scale(1) translateY(0);
+    opacity: 1;
+}
+
+/* Responsive Add Task */
+@media (max-width: 576px) {
+    .wrapper {
+        padding: 0 10px;
+    }
+}
