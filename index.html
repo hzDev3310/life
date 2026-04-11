@@ -1,38 +1,44 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Life Reset</title>
-    
+    <title>Life Reset | Modern Daily Rituals</title>
+
     <!-- PWA Meta tags -->
-    <meta name="theme-color" content="#0F5132">
+    <meta name="theme-color" content="#0F172A">
     <link rel="manifest" href="manifest.json">
     <link rel="icon" type="image/png" href="icons/icon-192x192.png">
     <link rel="apple-touch-icon" href="icons/icon-192x192.png">
 
-    <!-- Fonts -->
+    <!-- Fonts & Icons -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700;14..32,800&family=Outfit:wght@400;500;600;700;800&display=swap"
+        rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-    
+
     <!-- Bootstrap 5 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    
+
     <!-- Custom CSS -->
     <link rel="stylesheet" href="style.css">
 </head>
-<body class="bg-dark text-light">
 
-    <!-- Navbar -->
-    <nav class="navbar navbar-dark sticky-top" style="background-color: #0c4128;">
-        <div class="container-fluid d-flex py-1 px-3">
-            <span class="navbar-brand mb-0 h1 fw-bold font-outfit d-flex align-items-center gap-2">
-                <img src="logo.png" width="32" height="32" alt="Logo" style="border-radius: 8px;">
+<body>
+
+    <!-- Glassmorphic Navbar -->
+    <nav class="navbar navbar-dark sticky-top glass-nav">
+        <div class="container-fluid d-flex py-2 px-4">
+            <span class="navbar-brand mb-0 h1 fw-bold d-flex align-items-center gap-2">
+                <div class="logo-icon">
+                    <i class="bi bi-arrow-repeat text-white fs-5"></i>
+                </div>
                 Life Reset
             </span>
-            <button id="enableNotificationsBtn" class="btn btn-outline-light btn-sm d-flex align-items-center gap-2 position-relative">
+            <button id="enableNotificationsBtn" class="btn alert-btn-modern d-flex align-items-center gap-2">
                 <i class="bi bi-bell-fill"></i>
                 <span class="d-none d-sm-inline">Alerts</span>
             </button>
@@ -40,16 +46,21 @@
     </nav>
 
     <div class="container pb-5 mt-4 wrapper">
-        
-        <!-- Header & Progress -->
-        <div class="d-flex justify-content-between align-items-end border-bottom border-secondary pb-3 mb-4">
+
+        <!-- Header & Progress Section -->
+        <div class="d-flex justify-content-between align-items-end border-bottom border-secondary pb-3 mb-4"
+            style="border-color: rgba(255,255,255,0.08) !important;">
             <div>
-                <h5 class="text-secondary mb-1" id="currentDateDisplay">Today</h5>
-                <h2 class="fw-bold font-outfit mb-0">Daily Rituals</h2>
+                <div class="date-chip mb-2">
+                    <i class="bi bi-calendar3 me-1"></i>
+                    <span id="currentDateDisplay">Today</span>
+                </div>
+                <h2 class="fw-bold mb-0" style="font-family: 'Outfit', sans-serif; font-size: 1.8rem;">Daily Rituals
+                </h2>
             </div>
-            <div class="text-end">
-                <h3 class="mb-0 text-emerald fw-bold" id="progressText">0%</h3>
-                <small class="text-secondary">Completed</small>
+            <div class="progress-glass text-center">
+                <h3 class="mb-0 progress-percent" id="progressText">0%</h3>
+                <small class="text-secondary" style="font-size: 0.7rem;">Completed</small>
             </div>
         </div>
 
@@ -58,26 +69,31 @@
             <!-- Tasks will be rendered here dynamically -->
         </div>
 
-        <!-- Add Task Form -->
-        <div class="card bg-darker border-secondary mt-5 add-task-card">
-            <div class="card-body">
-                <h5 class="card-title fw-bold font-outfit mb-3">Add New Habit</h5>
+        <!-- Add Task Form - Modern Design -->
+        <div class="add-task-card-modern mt-5">
+            <div class="card-body p-4">
+                <h5 class="card-title fw-bold mb-3 d-flex align-items-center gap-2"
+                    style="font-family: 'Outfit', sans-serif;">
+                    <i class="bi bi-plus-circle-fill text-emerald"></i>
+                    Add New Habit
+                </h5>
                 <form id="taskForm">
                     <div class="mb-3">
-                        <label class="form-label text-secondary small">Task Name</label>
-                        <input type="text" id="taskName" class="form-control bg-dark text-light border-secondary" placeholder="e.g. Deep Work Session" required>
+                        <label class="form-label text-secondary small fw-semibold">Task Name</label>
+                        <input type="text" id="taskName" class="form-control modern-input"
+                            placeholder="e.g., Deep Work Session" required>
                     </div>
                     <div class="row g-3 mb-4">
                         <div class="col-6">
-                            <label class="form-label text-secondary small">Start Time</label>
-                            <input type="time" id="taskStartTime" class="form-control bg-dark text-light border-secondary" required>
+                            <label class="form-label text-secondary small fw-semibold">Start Time</label>
+                            <input type="time" id="taskStartTime" class="form-control modern-input" required>
                         </div>
                         <div class="col-6">
-                            <label class="form-label text-secondary small">Deadline</label>
-                            <input type="time" id="taskEndTime" class="form-control bg-dark text-light border-secondary" required>
+                            <label class="form-label text-secondary small fw-semibold">Deadline</label>
+                            <input type="time" id="taskEndTime" class="form-control modern-input" required>
                         </div>
                     </div>
-                    <button type="submit" class="btn btn-emerald w-100 fw-bold py-2">
+                    <button type="submit" class="btn btn-emerald-modern w-100 fw-bold py-2">
                         <i class="bi bi-plus-lg me-2"></i> Add Task
                     </button>
                 </form>
@@ -85,11 +101,13 @@
         </div>
     </div>
 
-    <!-- Dopamine Modal (Framer Motion style) -->
+    <!-- Dopamine Modal (Celebration) -->
     <div id="dopamineModal" class="dopamine-modal-backdrop">
-        <div class="dopamine-modal-content bg-emerald text-light p-4 rounded-4 shadow-lg text-center">
-            <i class="bi bi-star-fill text-warning fs-1 mb-2"></i>
-            <h3 class="fw-bold font-outfit mb-2" id="dopamineTitle">Excellent Work!</h3>
+        <div class="dopamine-modal-content p-4 rounded-4 text-center">
+            <div class="celebration-icon mb-2">
+                <i class="bi bi-stars fs-1 text-warning"></i>
+            </div>
+            <h3 class="fw-bold mb-2" id="dopamineTitle" style="font-family: 'Outfit', sans-serif;">Excellent Work!</h3>
             <p class="mb-0 opacity-75" id="dopamineMessage">You've completed a tough task.</p>
         </div>
     </div>
@@ -99,4 +117,5 @@
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
     <script src="app.js"></script>
 </body>
+
 </html>

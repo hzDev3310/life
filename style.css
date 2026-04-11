@@ -1,187 +1,314 @@
-/* style.css */
+/* ============================================
+   LIFE RESET - MODERN GLASSMORPHIC THEME
+   ============================================ */
+
 :root {
     --emerald-primary: #0F5132;
-    --emerald-light: #198754;
-    --dark-bg: #121212;
-    --darker-bg: #0a0a0a;
-    --text-primary: #f8f9fa;
-    --text-muted: #a0a0a0;
-    --danger-red: #dc3545;
+    --emerald-light: #10B981;
+    --emerald-glow: rgba(16, 185, 129, 0.4);
+    --dark-bg-start: #0B1120;
+    --dark-bg-end: #030712;
+    --glass-bg: rgba(18, 25, 45, 0.7);
+    --glass-border: rgba(255, 255, 255, 0.08);
+    --text-primary: #F1F5F9;
+    --text-muted: #94A3B8;
+    --danger-red: #F87171;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
 }
 
 body {
-    background-color: var(--dark-bg);
-    color: var(--text-primary);
+    background: radial-gradient(circle at 10% 20%, var(--dark-bg-start), var(--dark-bg-end));
     font-family: 'Inter', sans-serif;
+    color: var(--text-primary);
+    min-height: 100vh;
     overflow-x: hidden;
 }
 
-.font-outfit {
+/* ========== NAVBAR STYLES ========== */
+.glass-nav {
+    background: rgba(15, 23, 42, 0.65);
+    backdrop-filter: blur(16px);
+    border-bottom: 1px solid var(--glass-border);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+}
+
+.navbar-brand {
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    background: linear-gradient(135deg, #A3E635, var(--emerald-light));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent !important;
+    font-size: 1.55rem;
     font-family: 'Outfit', sans-serif;
 }
 
-.bg-darker {
-    background-color: var(--darker-bg) !important;
+.logo-icon {
+    background: linear-gradient(135deg, var(--emerald-light), #059669);
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 38px;
+    height: 38px;
+    box-shadow: 0 6px 14px -4px var(--emerald-glow);
+}
+
+.alert-btn-modern {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 40px;
+    padding: 8px 20px;
+    font-weight: 500;
+    backdrop-filter: blur(8px);
+    transition: all 0.25s ease;
+    color: var(--text-primary);
+}
+
+.alert-btn-modern:hover {
+    background: rgba(16, 185, 129, 0.2);
+    border-color: var(--emerald-light);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);
+}
+
+/* ========== DATE & PROGRESS ========== */
+.date-chip {
+    background: rgba(255, 255, 255, 0.04);
+    backdrop-filter: blur(8px);
+    padding: 6px 18px;
+    border-radius: 40px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    display: inline-block;
+}
+
+.progress-glass {
+    background: linear-gradient(135deg, rgba(30, 41, 59, 0.6), rgba(15, 23, 42, 0.7));
+    backdrop-filter: blur(12px);
+    border-radius: 60px;
+    padding: 8px 22px;
+    border: 1px solid rgba(16, 185, 129, 0.3);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+}
+
+.progress-percent {
+    font-size: 2rem;
+    font-weight: 800;
+    background: linear-gradient(135deg, #A3E635, var(--emerald-light));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    line-height: 1;
+    font-family: 'Outfit', sans-serif;
+}
+
+/* ========== TASK CARDS - GLASSMORPHIC ========== */
+.task-card {
+    background: var(--glass-bg);
+    backdrop-filter: blur(12px);
+    border-radius: 28px;
+    border: 1px solid var(--glass-border);
+    transition: all 0.3s cubic-bezier(0.2, 0.9, 0.4, 1.1);
+    box-shadow: 0 10px 24px -10px rgba(0, 0, 0, 0.4);
+    padding: 1rem 1.2rem;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.task-card:hover {
+    transform: translateY(-3px);
+    border-color: rgba(16, 185, 129, 0.4);
+    background: rgba(25, 35, 60, 0.8);
+    box-shadow: 0 20px 30px -14px rgba(0, 0, 0, 0.5);
+}
+
+/* Missed Task Style */
+.task-card.missed {
+    border-left: 4px solid var(--danger-red);
+    background: rgba(220, 38, 38, 0.1);
+}
+
+.task-card.missed:hover {
+    background: rgba(220, 38, 38, 0.15);
+}
+
+/* Completed Task Style */
+.task-card.completed {
+    opacity: 0.75;
+    border-color: rgba(16, 185, 129, 0.3);
+}
+
+.task-card.completed .task-title {
+    text-decoration: line-through;
+    color: var(--text-muted);
+}
+
+/* ========== MODERN CHECKBOX ========== */
+.modern-check {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.05);
+    border: 2px solid rgba(255, 255, 255, 0.25);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    color: white;
+    flex-shrink: 0;
+}
+
+.modern-check:hover {
+    border-color: var(--emerald-light);
+    transform: scale(1.05);
+}
+
+.modern-check.completed {
+    background: var(--emerald-light);
+    border-color: var(--emerald-light);
+    box-shadow: 0 0 10px var(--emerald-glow);
+}
+
+.modern-check.completed i {
+    font-size: 1rem;
+}
+
+/* ========== TASK CONTENT ========== */
+.task-content {
+    flex: 1;
+}
+
+.task-title {
+    font-weight: 700;
+    font-size: 1.05rem;
+    letter-spacing: -0.2px;
+    word-break: break-word;
+    margin-bottom: 6px;
+    font-family: 'Outfit', sans-serif;
+}
+
+.task-title.completed-text {
+    text-decoration: line-through;
+    color: var(--text-muted);
+}
+
+.time-badge-modern {
+    background: rgba(0, 0, 0, 0.5);
+    border-radius: 40px;
+    padding: 4px 14px;
+    font-size: 0.7rem;
+    font-weight: 500;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    backdrop-filter: blur(4px);
+}
+
+.time-badge-modern i {
+    font-size: 0.75rem;
+}
+
+/* ========== DELETE BUTTON ========== */
+.delete-task-btn {
+    opacity: 0.5;
+    transition: all 0.2s;
+    cursor: pointer;
+    padding: 8px;
+    border-radius: 40px;
+    background: transparent;
+    border: none;
+    color: #cbd5e1;
+    flex-shrink: 0;
+}
+
+.delete-task-btn:hover {
+    opacity: 1;
+    color: var(--danger-red);
+    background: rgba(248, 113, 113, 0.15);
+    transform: scale(1.08);
+}
+
+/* ========== ADD TASK CARD ========== */
+.add-task-card-modern {
+    background: rgba(15, 23, 42, 0.7);
+    backdrop-filter: blur(18px);
+    border-radius: 32px;
+    border: 1px solid var(--glass-border);
+    transition: all 0.3s;
+}
+
+.add-task-card-modern:hover {
+    border-color: rgba(16, 185, 129, 0.3);
+    box-shadow: 0 10px 30px -12px rgba(0, 0, 0, 0.5);
+}
+
+.modern-input {
+    background: rgba(0, 0, 0, 0.45);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 24px;
+    padding: 12px 18px;
+    color: white;
+    transition: all 0.2s;
+    font-family: 'Inter', sans-serif;
+}
+
+.modern-input:focus {
+    border-color: var(--emerald-light);
+    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.25);
+    background: rgba(0, 0, 0, 0.6);
+    outline: none;
+    color: white;
+}
+
+.modern-input::placeholder {
+    color: rgba(255, 255, 255, 0.3);
+}
+
+/* Modern Emerald Button */
+.btn-emerald-modern {
+    background: linear-gradient(95deg, var(--emerald-light), #059669);
+    border: none;
+    border-radius: 28px;
+    padding: 12px;
+    font-weight: 700;
+    transition: all 0.25s ease;
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+    color: white;
+}
+
+.btn-emerald-modern:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(16, 185, 129, 0.4);
+    filter: brightness(1.05);
+    color: white;
+}
+
+.btn-emerald-modern:active {
+    transform: translateY(1px);
 }
 
 .text-emerald {
     color: var(--emerald-light) !important;
 }
 
-.bg-emerald {
-    background-color: var(--emerald-primary) !important;
-}
-
-.btn-emerald {
-    background-color: var(--emerald-primary);
-    color: #fff;
-    border: none;
-    transition: background-color 0.2s ease, transform 0.1s ease;
-}
-
-.btn-emerald:hover, .btn-emerald:focus {
-    background-color: var(--emerald-light);
-    color: #fff;
-}
-
-.btn-emerald:active {
-    transform: scale(0.98);
-}
-
-.wrapper {
-    max-width: 600px;
-}
-
-/* Task Item */
-.task-item {
-    background-color: #1e1e1e;
-    border: 1px solid #333;
-    border-radius: 12px;
-    padding: 16px;
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
-    position: relative;
-    overflow: hidden;
-}
-
-.task-item:hover {
-    transform: translateY(-2px);
-    border-color: #555;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-}
-
-/* Checkbox Styling */
-.task-checkbox-container {
-    flex-shrink: 0;
-}
-
-.custom-checkbox {
-    appearance: none;
-    -webkit-appearance: none;
-    width: 28px;
-    height: 28px;
-    border: 2px solid #555;
-    border-radius: 50%;
-    outline: none;
-    cursor: pointer;
-    background-color: transparent;
-    transition: all 0.3s ease;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    position: relative;
-}
-
-.custom-checkbox:hover {
-    border-color: var(--emerald-light);
-}
-
-.custom-checkbox:checked {
-    background-color: var(--emerald-light);
-    border-color: var(--emerald-light);
-}
-
-.custom-checkbox:checked::after {
-    content: '✓';
-    color: #fff;
-    font-size: 16px;
-    font-weight: bold;
-    position: absolute;
-}
-
-/* Completed State */
-.task-item.completed {
-    opacity: 0.6;
-    border-color: #333 !important;
-}
-
-.task-item.completed:hover {
-    transform: none;
-    box-shadow: none;
-}
-
-.task-item.completed .task-title {
-    text-decoration: line-through;
-    color: var(--text-muted);
-}
-
-/* Missed Task State */
-.task-item.missed {
-    border-color: var(--danger-red) !important;
-    background-color: rgba(220, 53, 69, 0.05); /* faint red background */
-}
-
-/* Workday Focus Style */
-.task-item.workday-focus:not(.completed) {
-    border-left: 4px solid var(--emerald-light);
-}
-
-.workday-badge {
-    color: var(--emerald-light);
-    font-size: 0.9rem;
-    margin-left: 6px;
-    opacity: 0.8;
-}
-
-/* Typography in Tasks */
-.task-title {
-    font-size: 1.1rem;
-    font-weight: 500;
-    margin-bottom: 4px;
-    transition: all 0.3s ease;
-}
-
-.task-time {
-    font-size: 0.85rem;
-    color: var(--text-muted);
-    font-weight: 600;
-}
-
-/* Delete Button */
-.btn-delete {
-    background: transparent;
-    border: none;
-    color: #555;
-    padding: 8px;
-    border-radius: 8px;
-    transition: all 0.2s ease;
-}
-.btn-delete:hover {
-    color: var(--danger-red);
-    background: rgba(220, 53, 69, 0.1);
-}
-
-/* Dopamine Modal */
+/* ========== DOPAMINE MODAL ========== */
 .dopamine-modal-backdrop {
     position: fixed;
     top: 0;
     left: 0;
     width: 100vw;
     height: 100vh;
-    background: rgba(0, 0, 0, 0.6);
-    backdrop-filter: blur(4px);
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(12px);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -197,11 +324,14 @@ body {
 }
 
 .dopamine-modal-content {
-    min-width: 300px;
-    max-width: 90%;
+    background: linear-gradient(145deg, #1E293B, #0F172A);
+    border: 1px solid rgba(16, 185, 129, 0.5);
+    max-width: 340px;
+    width: 85%;
     transform: scale(0.8) translateY(20px);
     opacity: 0;
     transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.3s ease;
+    box-shadow: 0 25px 40px -12px black;
 }
 
 .dopamine-modal-backdrop.show .dopamine-modal-content {
@@ -209,9 +339,117 @@ body {
     opacity: 1;
 }
 
-/* Responsive Add Task */
+.celebration-icon {
+    animation: bounce 0.5s ease;
+}
+
+@keyframes bounce {
+
+    0%,
+    100% {
+        transform: translateY(0);
+    }
+
+    50% {
+        transform: translateY(-10px);
+    }
+}
+
+/* ========== EMPTY STATE ========== */
+.empty-state {
+    text-align: center;
+    padding: 60px 24px;
+    background: rgba(255, 255, 255, 0.02);
+    border-radius: 32px;
+    border: 1px dashed rgba(255, 255, 255, 0.1);
+}
+
+.empty-state i {
+    font-size: 3rem;
+    color: var(--text-muted);
+    margin-bottom: 1rem;
+    opacity: 0.5;
+}
+
+.empty-state p {
+    color: var(--text-muted);
+    font-size: 0.9rem;
+}
+
+/* ========== UTILITIES ========== */
+.wrapper {
+    max-width: 680px;
+}
+
+/* Scrollbar Styling */
+::-webkit-scrollbar {
+    width: 6px;
+}
+
+::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--emerald-light);
+    border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #059669;
+}
+
+/* ========== RESPONSIVE ========== */
 @media (max-width: 576px) {
     .wrapper {
-        padding: 0 10px;
+        padding: 0 12px;
     }
+
+    .task-card {
+        padding: 0.9rem 1rem;
+        gap: 12px;
+    }
+
+    .modern-check {
+        width: 28px;
+        height: 28px;
+    }
+
+    .task-title {
+        font-size: 0.95rem;
+    }
+
+    .progress-glass {
+        padding: 6px 16px;
+    }
+
+    .progress-percent {
+        font-size: 1.5rem;
+    }
+
+    .alert-btn-modern span {
+        display: none;
+    }
+
+    .alert-btn-modern {
+        padding: 8px 12px;
+    }
+}
+
+/* Animation for new tasks */
+@keyframes fadeSlideUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.task-card {
+    animation: fadeSlideUp 0.3s ease forwards;
 }
