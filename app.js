@@ -50,6 +50,11 @@ function initApp() {
         taskForm.addEventListener('submit', handleAddTask);
     }
 
+    const testBtn = document.getElementById('testNotificationsBtn');
+    if (testBtn) {
+        testBtn.addEventListener('click', handleTestNotification);
+    }
+
     const notifBtn = document.getElementById('enableNotificationsBtn');
     if (notifBtn) {
         notifBtn.addEventListener('click', requestNotifications);
@@ -60,6 +65,19 @@ function initApp() {
 
     // 5. Register Service Worker
     registerServiceWorker();
+}
+
+function handleTestNotification() {
+    feedback('click');
+    if (!("Notification" in window) || Notification.permission !== "granted") {
+        alert("Please enable alerts first! 🔔");
+        return;
+    }
+    
+    // Send test notification after a tiny delay
+    setTimeout(() => {
+        sendNotification("Test Successful! 🚀", "Your Life Reset alerts and sounds are working perfectly.");
+    }, 500);
 }
 
 // --- Data Operations ---
