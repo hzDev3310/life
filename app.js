@@ -421,32 +421,28 @@ function requestNotifications() {
 
 function sendNotification(title, body) {
     if ("Notification" in window && Notification.permission === "granted") {
-        // Play sound
-        notificationSound.play().catch(e => console.log("Audio play failed:", e));
+        // Play sound (always try)
+        notificationSound.play().catch(e => console.warn("Audio play blocked/failed:", e));
 
-        // Use Service Worker for notification
+        const options = {
+            body: body,
+            icon: 'icons/icon-192x192.png',
+            badge: 'icons/icon-192x192.png',
+            vibrate: [200, 100, 200],
+            silent: false
+        };
+
+        // If PWA / Standalone mode, SW notifications are more robust
         if (navigator.serviceWorker && navigator.serviceWorker.controller) {
-            navigator.serviceWorker.ready.then(registration => {
-                registration.showNotification(title, {
-                    body: body,
-                    icon: 'icons/icon-192x192.png',
-                    badge: 'icons/icon-192x192.png',
-                    vibrate: [200, 100, 200],
-                    silent: false
-                });
-            });
-        } else if (navigator.serviceWorker) {
-            // Wait for service worker
-            navigator.serviceWorker.ready.then(registration => {
-                registration.showNotification(title, {
-                    body: body,
-                    icon: 'icons/icon-192x192.png',
-                    badge: 'icons/icon-192x192.png'
-                });
+            navigator.serviceWorker.ready.then(reg => {
+                reg.showNotification(title, options);
+            }).catch(err => {
+                console.error("SW notification failed, falling back:", err);
+                new Notification(title, options);
             });
         } else {
-            // Fallback to standard notification
-            new Notification(title, { body, icon: 'icons/icon-192x192.png' });
+            // Standard browser fallback
+            new Notification(title, options);
         }
     }
 }

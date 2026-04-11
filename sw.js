@@ -1,17 +1,18 @@
 // sw.js
 const CACHE_NAME = 'life-reset-v1';
 const ASSETS_TO_CACHE = [
-    '/',
-    '/index.html',
-    '/style.css',
-    '/app.js',
-    '/manifest.json',
-    '/logo.png',
-    '/icons/icon-192x192.png',
-    '/icons/icon-512x512.png'
+    './',
+    './index.html',
+    './style.css',
+    './app.js',
+    './manifest.json',
+    './logo.png',
+    './icons/icon-192x192.png',
+    './icons/icon-512x512.png'
 ];
 
 self.addEventListener('install', event => {
+    self.skipWaiting();
     event.waitUntil(
         caches.open(CACHE_NAME)
             .then(cache => {
@@ -21,19 +22,16 @@ self.addEventListener('install', event => {
 });
 
 self.addEventListener('fetch', event => {
+    // Basic network-first strategy for dynamic nature of app
     event.respondWith(
-        caches.match(event.request)
-            .then(response => {
-                // Cache hit - return response
-                if (response) {
-                    return response;
-                }
-                return fetch(event.request);
-            })
+        fetch(event.request).catch(() => {
+            return caches.match(event.request);
+        })
     );
 });
 
 self.addEventListener('activate', event => {
+    event.waitUntil(clients.claim());
     const cacheWhitelist = [CACHE_NAME];
     event.waitUntil(
         caches.keys().then(cacheNames => {
