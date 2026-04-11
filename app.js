@@ -11,7 +11,7 @@ const dopamineMessages = [
 ];
 
 // Sound Assets
-const notificationSound = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
+const notificationSound = new Audio('https://assets.mixkit.co/active_storage/sfx/2354/2354-preview.mp3');
 const successSound = new Audio('https://assets.mixkit.co/active_storage/sfx/2019/2019-preview.mp3');
 const tapSound = new Audio('https://assets.mixkit.co/active_storage/sfx/2568/2568-preview.mp3');
 const deleteSound = new Audio('https://assets.mixkit.co/active_storage/sfx/2561/2561-preview.mp3');
@@ -24,11 +24,11 @@ function feedback(type = 'soft') {
         else if (type === 'error') navigator.vibrate([100, 50, 100]);
         else navigator.vibrate(20); // soft tap
     }
-    
+
     // Play Sound
-    if (type === 'success') successSound.play().catch(() => {});
-    else if (type === 'click') tapSound.play().catch(() => {});
-    else if (type === 'delete') deleteSound.play().catch(() => {});
+    if (type === 'success') successSound.play().catch(() => { });
+    else if (type === 'click') tapSound.play().catch(() => { });
+    else if (type === 'delete') deleteSound.play().catch(() => { });
 }
 
 // Main App Logic
