@@ -201,6 +201,8 @@ function triggerReward() {
 
 // --- The Interval Engine & Notifications ---
 
+const notificationSound = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
+
 function startIntervalEngine() {
     // Run every 60 seconds
     setInterval(checkRappelsAndDeadlines, 60 * 1000);
@@ -221,7 +223,6 @@ function checkRappelsAndDeadlines() {
 
         // Condition 1: Failure Alert (Deadline passed)
         if (currentTimeStr > task.endTime) {
-            // It will naturally turn red via CSS when rendered, but let's notify if we haven't already alerted for fail
             if (task.lastNotified !== 'FAILED') {
                 sendNotification("Goal Missed", `You missed the deadline for: ${task.name}`);
                 task.lastNotified = 'FAILED';
@@ -230,7 +231,6 @@ function checkRappelsAndDeadlines() {
         } 
         // Condition 2: Rappel (Task is active in its timeframe)
         else if (currentTimeStr >= task.startTime && currentTimeStr <= task.endTime) {
-            // Check 15 minute throttle (15 * 60 * 1000 = 900000 ms)
             if (!task.lastNotified || (currentTimeMs - task.lastNotified > 900000)) {
                 sendNotification("Time to Work!", `Current task: ${task.name}`);
                 task.lastNotified = currentTimeMs;
@@ -240,11 +240,8 @@ function checkRappelsAndDeadlines() {
     });
 
     if (hasChanges) {
-        saveTasks(tasks); // Save notification updates and trigger a re-render to update colors
+        saveTasks(tasks);
     } else {
-        // Just re-render occasionally to catch tasks passing deadline gracefully without reload
-        // But let's only do it if something actually changed state visually.
-        // For simplicity, we just trigger a render if the current time minute changed.
         const currentMinute = now.getMinutes();
         if (window.lastMinuteRender !== currentMinute) {
              renderTasks();
@@ -255,7 +252,7 @@ function checkRappelsAndDeadlines() {
 
 function requestNotifications() {
     if (!("Notification" in window)) {
-        alert("This browser does not support desktop notification");
+        alert("This browser does not support notifications");
         return;
     }
     Notification.requestPermission().then(permission => {
@@ -263,18 +260,32 @@ function requestNotifications() {
             const btn = document.getElementById('enableNotificationsBtn');
             btn.innerHTML = '<i class="bi bi-bell-fill"></i> <span class="d-none d-sm-inline">Enabled</span>';
             btn.classList.replace('btn-outline-light', 'btn-emerald');
-            sendNotification("Notifications Enabled", "You will now receive rappels.");
+            // Play sound once to "unlock" audio for Safari/Mobile
+            notificationSound.play().catch(() => {});
+            sendNotification("Notifications Enabled", "You will now receive alerts and sounds.");
         }
     });
 }
 
 function sendNotification(title, body) {
     if ("Notification" in window && Notification.permission === "granted") {
-        new Notification(title, {
-            body: body,
-            icon: 'logo.png',
-            badge: 'logo.png'
-        });
+        // Play sound
+        notificationSound.play().catch(e => console.log("Audio play failed:", e));
+
+        // Use Service Worker for notification (Better background support and Safari PWA compatible)
+        if (navigator.serviceWorker.controller) {
+            navigator.serviceWorker.ready.then(registration => {
+                registration.showNotification(title, {
+                    body: body,
+                    icon: 'icons/icon-192x192.png',
+                    badge: 'icons/icon-192x192.png',
+                    vibrate: [200, 100, 200]
+                });
+            });
+        } else {
+            // Fallback to standard notification
+            new Notification(title, { body, icon: 'icons/icon-192x192.png' });
+        }
     }
 }
 
