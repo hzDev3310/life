@@ -73,7 +73,7 @@ function handleTestNotification() {
         alert("Please enable alerts first! 🔔");
         return;
     }
-    
+
     // Send test notification after a tiny delay
     setTimeout(() => {
         sendNotification("Test Successful! 🚀", "Your Life Reset alerts and sounds are working perfectly.");
