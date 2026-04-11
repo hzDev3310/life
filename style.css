@@ -2,6 +2,7 @@
    LIFE RESET - MODERN GLASSMORPHIC THEME
    ============================================ */
 
+
 :root {
     --emerald-primary: #0F5132;
     --emerald-light: #10B981;
@@ -19,11 +20,14 @@
     margin: 0;
     padding: 0;
     box-sizing: border-box;
+    background-color: var(--dark-bg-start);
 }
 
 body {
+
     background: radial-gradient(circle at 10% 20%, var(--dark-bg-start), var(--dark-bg-end));
-    background-attachment: fixed; /* prevent background jump on mobile scroll */
+    background-attachment: fixed;
+    /* prevent background jump on mobile scroll */
     font-family: 'Inter', sans-serif;
     color: var(--text-primary);
     min-height: 100vh;
@@ -38,7 +42,8 @@ body {
     backdrop-filter: blur(20px) saturate(180%);
     border-bottom: 1px solid var(--glass-border);
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
-    padding-top: max(8px, env(safe-area-inset-top)); /* protect content from notch */
+    padding-top: max(8px, env(safe-area-inset-top));
+    /* protect content from notch */
 }
 
 .navbar-brand {
