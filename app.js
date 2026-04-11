@@ -369,8 +369,15 @@ function checkRappelsAndDeadlines() {
 }
 
 function requestNotifications() {
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+    const isStandalone = window.navigator.standalone === true || window.matchMedia('(display-mode: standalone)').matches;
+
     if (!("Notification" in window)) {
-        alert("This browser does not support notifications");
+        if (isIOS && !isStandalone) {
+            alert("To enable notifications on iPhone:\n1. Tap the 'Share' icon below\n2. Select 'Add to Home Screen'\n3. Open the app from your home screen and try again! 🔔");
+        } else {
+            alert("This browser does not support notifications. Please try a modern browser like Chrome or Safari (added to home screen).");
+        }
         return;
     }
 

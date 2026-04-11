@@ -2,8 +2,9 @@
   "name": "Life Reset Habit Tracker",
   "short_name": "Life Reset",
   "description": "A gamified, productivity-focused habit tracker",
-  "start_url": "/",
+  "start_url": "./index.html",
   "display": "standalone",
+  "display_override": ["standalone", "fullscreen", "minimal-ui"],
   "background_color": "#121212",
   "theme_color": "#0F5132",
   "icons": [
