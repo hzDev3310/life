@@ -43,6 +43,7 @@ function initApp() {
 
     // 2. Render tasks from storage
     renderTasks();
+    renderDashboard();
 
     // 3. Set up event listeners
     const taskForm = document.getElementById('taskForm');
@@ -55,24 +56,23 @@ function initApp() {
         testBtn.addEventListener('click', handleTestNotification);
     }
 
-    const showDashBtn = document.getElementById('showDashboardBtn');
-    if (showDashBtn) {
-        showDashBtn.addEventListener('click', () => {
-            renderDashboard();
-            const modal = new bootstrap.Modal(document.getElementById('dashboardModal'));
-            modal.show();
-        });
-    }
-
     const backupBtn = document.getElementById('backupDriveBtn');
     if (backupBtn) {
-        backupBtn.addEventListener('click', handleDriveBackup);
+        backupBtn.addEventListener('click', authenticateAndBackup);
     }
 
     const notifBtn = document.getElementById('enableNotificationsBtn');
     if (notifBtn) {
         notifBtn.addEventListener('click', requestNotifications);
     }
+
+    // Tab Navigation
+    document.querySelectorAll('.tab-item').forEach(tab => {
+        tab.addEventListener('click', () => {
+            feedback('click');
+            switchTab(tab.getAttribute('data-tab'));
+        });
+    });
 
     // 4. Start Interval Engine
     startIntervalEngine();
@@ -81,13 +81,25 @@ function initApp() {
     registerServiceWorker();
 }
 
+function switchTab(tabId) {
+    // Update Nav
+    document.querySelectorAll('.tab-item').forEach(t => t.classList.remove('active'));
+    document.querySelector(`[data-tab="${tabId}"]`).classList.add('active');
+
+    // Update Panes
+    document.querySelectorAll('.app-tab-pane').forEach(p => p.classList.remove('active'));
+    document.getElementById(tabId).classList.add('active');
+
+    if (tabId === 'analysisTab') renderDashboard();
+}
+
 function renderDashboard() {
     const stats = getMonthlyAnalysis();
     const container = document.getElementById('monthlyStatsContainer');
     if (!container) return;
 
     if (Object.keys(stats).length === 0) {
-        container.innerHTML = `<div class="col-12 text-center py-4 text-muted">No history data yet. Your progress will be tracked daily starting today!</div>`;
+        container.innerHTML = `<div class="col-12 text-center py-5 text-muted opacity-50"><i class="bi bi-clock-history fs-1 mb-3 d-block"></i> No rituals history yet. Progress is tracked daily.</div>`;
         return;
     }
 
@@ -101,54 +113,94 @@ function renderDashboard() {
                     <div class="stat-label mb-1">${monthName}</div>
                     <div class="d-flex justify-content-between align-items-end">
                         <div class="stat-value">${data.avgPerf}%</div>
-                        <div class="text-secondary small mb-1">${data.completed} / ${data.total} Tasks</div>
+                        <div class="text-secondary small mb-1">${data.completed}/${data.total} Tasks</div>
                     </div>
                     <div class="progress-bar-container">
                         <div class="progress-bar-fill" style="width: ${data.avgPerf}%"></div>
                     </div>
-                    <div class="mt-2 small opacity-50">Data from ${data.days} days</div>
                 </div>
             </div>
         `;
     }).join('');
 }
 
-function handleDriveBackup() {
+// --- Google Drive API Integration ---
+let tokenClient;
+let accessToken = null;
+
+function authenticateAndBackup() {
     feedback('click');
     const backupBtn = document.getElementById('backupDriveBtn');
-    backupBtn.innerHTML = '<i class="bi bi-hourglass-split me-2"></i> Syncing to hamzasayari2024@gmail.com...';
     backupBtn.disabled = true;
+    backupBtn.innerHTML = '<i class="bi bi-hourglass-split me-2"></i> Connecting to Google...';
 
-    // 1. Prepare Data
+    // GIS Auth Flow
+    tokenClient = google.accounts.oauth2.initTokenClient({
+        client_id: '94246102693-placeholder.apps.googleusercontent.com', // User needs to replace with real ID
+        scope: 'https://www.googleapis.com/auth/drive.file',
+        callback: (tokenResponse) => {
+            if (tokenResponse && tokenResponse.access_token) {
+                accessToken = tokenResponse.access_token;
+                uploadToDrive();
+            }
+        },
+    });
+
+    if (accessToken === null) {
+        tokenClient.requestAccessToken({ prompt: 'consent' });
+    } else {
+        uploadToDrive();
+    }
+}
+
+async function uploadToDrive() {
+    const backupBtn = document.getElementById('backupDriveBtn');
+    backupBtn.innerHTML = '<i class="bi bi-cloud-upload-fill me-2"></i> Uploading Backup...';
+
     const data = {
+        app: "Life Reset",
         email: "hamzasayari2024@gmail.com",
-        backup_date: new Date().toISOString(),
-        tasks: getTasks(),
-        history: JSON.parse(localStorage.getItem('life_reset_history')) || []
+        timestamp: new Date().toISOString(),
+        history: JSON.parse(localStorage.getItem('life_reset_history')) || [],
+        tasks: getTasks()
     };
 
-    // 2. Perform Export (since we don't have server-side Google OAuth in this static app, 
-    // we provide a download which the user can save to their Drive folder)
-    setTimeout(() => {
-        const json = JSON.stringify(data, null, 2);
-        const blob = new Blob([json], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        const month = new Date().toISOString().substring(0, 7);
-        a.href = url;
-        a.download = `Life_Reset_Backup_${month}.json`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
+    const month = new Date().toISOString().substring(0, 7);
+    const fileName = `Life_Reset_Backup_${month}.json`;
 
-        backupBtn.innerHTML = '<i class="bi bi-check-circle-fill me-2"></i> Backup Successful';
-        
-        setTimeout(() => {
-            backupBtn.innerHTML = '<i class="bi bi-cloud-arrow-up-fill me-2"></i> Backup to Google Drive';
-            backupBtn.disabled = false;
-        }, 3000);
-    }, 1500);
+    const metadata = {
+        name: fileName,
+        mimeType: 'application/json',
+    };
+
+    const file = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const form = new FormData();
+    form.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
+    form.append('file', file);
+
+    try {
+        const response = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
+            method: 'POST',
+            headers: new Headers({ 'Authorization': 'Bearer ' + accessToken }),
+            body: form
+        });
+
+        if (response.ok) {
+            feedback('success');
+            backupBtn.innerHTML = '<i class="bi bi-cloud-check-fill me-2"></i> Sync Complete!';
+            setTimeout(() => {
+                backupBtn.innerHTML = '<i class="bi bi-cloud-arrow-up-fill me-2"></i> Sync to Drive API';
+                backupBtn.disabled = false;
+            }, 3000);
+        } else {
+            throw new Error('Upload failed');
+        }
+    } catch (err) {
+        console.error(err);
+        alert("Google Drive API Error: Please verify your internet and try again.");
+        backupBtn.disabled = false;
+        backupBtn.innerHTML = '<i class="bi bi-exclamation-triangle-fill me-2"></i> Error';
+    }
 }
 
 function handleTestNotification() {

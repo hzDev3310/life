@@ -513,3 +513,70 @@ body {
     background: linear-gradient(90deg, #A3E635, var(--emerald-light));
     border-radius: 10px;
 }
+
+/* ========== TAB NAVIGATION SYSTEM ========== */
+.app-tabs-nav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: rgba(18, 25, 45, 0.9);
+    backdrop-filter: blur(25px) saturate(200%);
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    display: flex;
+    justify-content: space-around;
+    padding-top: 12px;
+    padding-bottom: max(12px, env(safe-area-inset-bottom));
+    z-index: 1000;
+}
+
+.tab-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    color: var(--text-muted);
+    font-size: 0.75rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    width: 33%;
+}
+
+.tab-item i {
+    font-size: 1.4rem;
+    margin-bottom: 2px;
+}
+
+.tab-item.active {
+    color: var(--emerald-light);
+}
+
+.tab-item.active i {
+    transform: translateY(-2px);
+    text-shadow: 0 0 10px var(--emerald-glow);
+}
+
+.app-tab-pane {
+    display: none;
+    animation: tabFadeIn 0.3s ease-out;
+}
+
+.app-tab-pane.active {
+    display: block;
+}
+
+@keyframes tabFadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Hide original navbar if desired, or keep as simple title */
+.navbar {
+    display: none; /* We use Tabs now for primary navigation */
+}
+
+@media (max-width: 576px) {
+    body {
+        padding-top: 0; /* Align to top on mobile */
+    }
+}

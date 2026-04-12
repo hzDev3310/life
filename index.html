@@ -33,115 +33,110 @@
 
 <body>
 
-    <!-- Glassmorphic Navbar -->
-    <nav class="navbar navbar-dark sticky-top glass-nav">
-        <div class="container-fluid d-flex py-2 px-4">
-            <span class="navbar-brand mb-0 h1 fw-bold d-flex align-items-center gap-2">
-                <div class="logo-icon">
-                    <i class="bi bi-arrow-repeat text-white fs-5"></i>
+    <div id="tabContent" class="container pb-5 mt-4 wrapper">
+        <!-- RITUALS TAB -->
+        <section id="ritualsTab" class="app-tab-pane active">
+            <!-- Header & Progress Section -->
+            <div class="d-flex justify-content-between align-items-end border-bottom border-secondary pb-3 mb-4"
+                style="border-color: rgba(255,255,255,0.08) !important;">
+                <div>
+                    <div class="date-chip mb-2">
+                        <i class="bi bi-calendar3 me-1"></i>
+                        <span id="currentDateDisplay">Today</span>
+                    </div>
+                    <h2 class="fw-bold mb-0" style="font-family: 'Outfit', sans-serif; font-size: 1.8rem;">Daily Rituals</h2>
                 </div>
-                Life Reset
-            </span>
-            <div class="d-flex gap-2">
-                <button id="showDashboardBtn" class="btn alert-btn-modern p-2" title="Analysis & Backup">
-                    <i class="bi bi-graph-up-arrow"></i>
-                </button>
-                <button id="testNotificationsBtn" class="btn alert-btn-modern p-2" title="Test Notification">
-                    <i class="bi bi-play-circle"></i>
-                </button>
-                <button id="enableNotificationsBtn" class="btn alert-btn-modern d-flex align-items-center gap-2">
-                    <i class="bi bi-bell-fill"></i>
-                    <span class="d-none d-sm-inline">Alerts</span>
-                </button>
+                <div class="progress-glass text-center">
+                    <h3 class="mb-0 progress-percent" id="progressText">0%</h3>
+                    <small class="text-secondary" style="font-size: 0.7rem;">Completed</small>
+                </div>
             </div>
+
+            <!-- Task List Container -->
+            <div id="taskList" class="d-flex flex-column gap-3 mb-4">
+                <!-- Tasks will be rendered here dynamically -->
+            </div>
+
+            <div class="add-task-card-modern mt-5">
+                <div class="card-body p-4">
+                    <h5 class="card-title fw-bold mb-3 d-flex align-items-center gap-2" style="font-family: 'Outfit', sans-serif;">
+                        <i class="bi bi-plus-circle-fill text-emerald"></i> Add New Habit
+                    </h5>
+                    <form id="taskForm">
+                        <div class="mb-3">
+                            <label class="form-label text-secondary small fw-semibold">Task Name</label>
+                            <input type="text" id="taskName" class="form-control modern-input" placeholder="e.g., Deep Work Session" required>
+                        </div>
+                        <div class="row g-3 mb-4">
+                            <div class="col-6">
+                                <label class="form-label text-secondary small fw-semibold">Start Time</label>
+                                <input type="time" id="taskStartTime" class="form-control modern-input" required>
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label text-secondary small fw-semibold">Deadline</label>
+                                <input type="time" id="taskEndTime" class="form-control modern-input" required>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-emerald-modern w-100 fw-bold py-2">
+                            <i class="bi bi-plus-lg me-2"></i> Add Task
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </section>
+
+        <!-- ANALYSIS TAB -->
+        <section id="analysisTab" class="app-tab-pane">
+            <h2 class="fw-bold mb-4" style="font-size: 1.8rem; font-family: 'Outfit', sans-serif;">Data Analysis</h2>
+            <div id="monthlyStatsContainer" class="row g-3">
+                <!-- Stats will be loaded here -->
+            </div>
+        </section>
+
+        <!-- SETTINGS TAB -->
+        <section id="settingsTab" class="app-tab-pane">
+            <h2 class="fw-bold mb-4" style="font-size: 1.8rem; font-family: 'Outfit', sans-serif;">Settings</h2>
+            
+            <div class="glass-card-modern p-4 rounded-4 mb-4">
+                <h6 class="fw-bold mb-3"><i class="bi bi-google text-emerald me-2"></i> Google Drive Backup</h6>
+                <p class="small text-secondary mb-3">Linked to: <strong>hamzasayari2024@gmail.com</strong></p>
+                <div class="d-flex flex-column gap-3">
+                    <button id="backupDriveBtn" class="btn btn-emerald-modern w-100 py-3 fw-bold">
+                        <i class="bi bi-cloud-arrow-up-fill me-2"></i> Sync to Drive API
+                    </button>
+                </div>
+                <div class="mt-3 small text-muted text-center">Your data is stored in 'Life_Reset_App/backups'</div>
+            </div>
+
+            <div class="glass-card-modern p-4 rounded-4">
+                <h6 class="fw-bold mb-3"><i class="bi bi-gear-fill text-secondary me-2"></i> Preferences</h6>
+                <div class="d-flex gap-2">
+                    <button id="enableNotificationsBtn" class="btn alert-btn-modern flex-grow-1 py-3 justify-content-center">
+                        <i class="bi bi-bell-fill me-2"></i> Alerts
+                    </button>
+                    <button id="testNotificationsBtn" class="btn alert-btn-modern p-3">
+                        <i class="bi bi-play-circle fs-5"></i>
+                    </button>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- Bottom App Tabs -->
+    <nav class="app-tabs-nav">
+        <div class="tab-item active" data-tab="ritualsTab">
+            <i class="bi bi-check2-circle"></i>
+            <span>Rituals</span>
+        </div>
+        <div class="tab-item" data-tab="analysisTab">
+            <i class="bi bi-bar-chart"></i>
+            <span>Analysis</span>
+        </div>
+        <div class="tab-item" data-tab="settingsTab">
+            <i class="bi bi-person-gear"></i>
+            <span>Settings</span>
         </div>
     </nav>
-
-    <!-- Dashboard Modal -->
-    <div class="modal fade" id="dashboardModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered modal-lg">
-            <div class="modal-content glass-card-modern border-0">
-                <div class="modal-header border-bottom border-light border-opacity-10 px-4">
-                    <h5 class="modal-title fw-bold" style="font-family: 'Outfit', sans-serif;">
-                        <i class="bi bi-bar-chart-fill text-emerald me-2"></i> Monthly Performance
-                    </h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body p-4">
-                    <div id="monthlyStatsContainer" class="row g-3">
-                        <!-- Stats will be loaded here -->
-                    </div>
-                    
-                    <div class="mt-4 p-3 rounded-3 bg-white bg-opacity-5 border border-light border-opacity-10">
-                        <div class="d-flex justify-content-between align-items-center mb-2">
-                            <h6 class="mb-0 fw-bold">Cloud Backup</h6>
-                            <span class="badge bg-secondary opacity-75">G-Drive</span>
-                        </div>
-                        <p class="small text-secondary mb-3">Sync your rituals history to <strong>hamzasayari2024@gmail.com</strong></p>
-                        <button id="backupDriveBtn" class="btn btn-emerald-modern w-100 py-2 fw-bold">
-                            <i class="bi bi-cloud-arrow-up-fill me-2"></i> Backup to Google Drive
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="container pb-5 mt-4 wrapper">
-
-        <!-- Header & Progress Section -->
-        <div class="d-flex justify-content-between align-items-end border-bottom border-secondary pb-3 mb-4"
-            style="border-color: rgba(255,255,255,0.08) !important;">
-            <div>
-                <div class="date-chip mb-2">
-                    <i class="bi bi-calendar3 me-1"></i>
-                    <span id="currentDateDisplay">Today</span>
-                </div>
-                <h2 class="fw-bold mb-0" style="font-family: 'Outfit', sans-serif; font-size: 1.8rem;">Daily Rituals
-                </h2>
-            </div>
-            <div class="progress-glass text-center">
-                <h3 class="mb-0 progress-percent" id="progressText">0%</h3>
-                <small class="text-secondary" style="font-size: 0.7rem;">Completed</small>
-            </div>
-        </div>
-
-        <!-- Task List Container -->
-        <div id="taskList" class="d-flex flex-column gap-3 mb-4">
-            <!-- Tasks will be rendered here dynamically -->
-        </div>
-
-        <!-- Add Task Form - Modern Design -->
-        <div class="add-task-card-modern mt-5">
-            <div class="card-body p-4">
-                <h5 class="card-title fw-bold mb-3 d-flex align-items-center gap-2"
-                    style="font-family: 'Outfit', sans-serif;">
-                    <i class="bi bi-plus-circle-fill text-emerald"></i>
-                    Add New Habit
-                </h5>
-                <form id="taskForm">
-                    <div class="mb-3">
-                        <label class="form-label text-secondary small fw-semibold">Task Name</label>
-                        <input type="text" id="taskName" class="form-control modern-input"
-                            placeholder="e.g., Deep Work Session" required>
-                    </div>
-                    <div class="row g-3 mb-4">
-                        <div class="col-6">
-                            <label class="form-label text-secondary small fw-semibold">Start Time</label>
-                            <input type="time" id="taskStartTime" class="form-control modern-input" required>
-                        </div>
-                        <div class="col-6">
-                            <label class="form-label text-secondary small fw-semibold">Deadline</label>
-                            <input type="time" id="taskEndTime" class="form-control modern-input" required>
-                        </div>
-                    </div>
-                    <button type="submit" class="btn btn-emerald-modern w-100 fw-bold py-2">
-                        <i class="bi bi-plus-lg me-2"></i> Add Task
-                    </button>
-                </form>
-            </div>
-        </div>
-    </div>
 
     <!-- Dopamine Modal (Celebration) -->
     <div id="dopamineModal" class="dopamine-modal-backdrop">
@@ -154,6 +149,10 @@
         </div>
     </div>
 
+    <!-- Google API & GIS -->
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <script src="https://apis.google.com/js/api.js" async defer></script>
+    
     <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
