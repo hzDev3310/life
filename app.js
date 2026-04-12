@@ -76,6 +76,17 @@ function initApp() {
         notifBtn.addEventListener('click', requestNotifications);
     }
 
+    const expenseForm = document.getElementById('expenseForm');
+    if (expenseForm) {
+        expenseForm.addEventListener('submit', handleAddExpense);
+    }
+
+    const financeFilter = document.getElementById('financeMonthFilter');
+    if (financeFilter) {
+        financeFilter.value = new Date().toISOString().substring(0, 7);
+        financeFilter.addEventListener('change', renderFinance);
+    }
+
     // Tab Navigation
     document.querySelectorAll('.tab-item').forEach(tab => {
         tab.addEventListener('click', () => {
@@ -92,6 +103,10 @@ function initApp() {
 
     // Initial renders
     renderNotes();
+    renderFinance();
+
+    // 6. Auto Cloud Sync Check
+    setTimeout(autoSyncCheck, 2000); 
 }
 
 function switchTab(tabId) {
@@ -105,7 +120,177 @@ function switchTab(tabId) {
 
     if (tabId === 'analysisTab') renderDashboard();
     if (tabId === 'notesTab') renderNotes();
+    if (tabId === 'financeTab') renderFinance();
+    if (tabId === 'settingsTab') fetchCloudHistory();
 }
+
+// --- Cloud Sync Logic ---
+
+function setSyncProgress(percent) {
+    const container = document.getElementById('syncProgressContainer');
+    const bar = document.getElementById('syncProgressBar');
+    if (!container || !bar) return;
+
+    if (percent === 0) {
+        container.style.display = 'block';
+        bar.style.width = '0%';
+    } else if (percent >= 100) {
+        bar.style.width = '100%';
+        setTimeout(() => { container.style.display = 'none'; }, 1500);
+    } else {
+        bar.style.width = percent + '%';
+    }
+}
+
+function autoSyncCheck() {
+    const lastSync = localStorage.getItem('life_reset_last_sync');
+    const today = new Date().toISOString().substring(0, 10);
+
+    if (lastSync !== today) {
+        console.log("Auto-syncing data for today...");
+        authenticateAndBackup(true); // true = silent/auto
+    }
+}
+
+async function fetchCloudHistory() {
+    const container = document.getElementById('cloudHistoryList');
+    if (!container) return;
+
+    // We reuse the token check from backup logic
+    if (typeof gapi === 'undefined' || !localStorage.getItem('gdrive_token')) {
+        container.innerHTML = `<div class="text-center py-3 opacity-50 small">Sync required to view history</div>`;
+        return;
+    }
+
+    try {
+        const token = localStorage.getItem('gdrive_token');
+        const folderId = await getOrCreateFolder(token);
+        
+        const response = await fetch(`https://www.googleapis.com/drive/v3/files?q='${folderId}'+in+parents+and+trashed=false&fields=files(id,name,createdTime)&orderBy=createdTime+desc`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await response.json();
+        
+        if (!data.files || data.files.length === 0) {
+            container.innerHTML = `<div class="text-center py-3 opacity-50 small">No cloud backups found.</div>`;
+            return;
+        }
+
+        container.innerHTML = data.files.slice(0, 5).map(file => {
+            const date = new Date(file.createdTime).toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
+            return `
+                <div class="cloud-history-item p-3 rounded-4 d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="mb-0 fw-bold small">Archive: ${file.name.replace('.json', '')}</h6>
+                        <small class="text-secondary opacity-75">Saved ${date}</small>
+                    </div>
+                    <i class="bi bi-cloud-check text-success fs-5"></i>
+                </div>
+            `;
+        }).join('');
+
+    } catch (err) {
+        console.error("History fetch failed:", err);
+        container.innerHTML = `<div class="text-center py-3 text-danger small">Offline or Link Expired</div>`;
+    }
+}
+
+// --- Finance / Expenses Operations ---
+
+function getExpenses() {
+    return JSON.parse(localStorage.getItem('life_reset_expenses')) || [];
+}
+
+function saveExpenses(expenses) {
+    localStorage.setItem('life_reset_expenses', JSON.stringify(expenses));
+    renderFinance();
+}
+
+function handleAddExpense(e) {
+    e.preventDefault();
+    const amount = parseFloat(document.getElementById('expenseAmount').value);
+    const desc = document.getElementById('expenseDesc').value.trim();
+    // Use submitter to detect which button was clicked
+    const type = e.submitter ? e.submitter.getAttribute('data-type') : 'expense';
+
+    if (isNaN(amount) || !desc) return;
+
+    const expenses = getExpenses();
+    expenses.unshift({
+        id: Date.now(),
+        amount: amount,
+        description: desc,
+        type: type, // 'income' or 'expense'
+        timestamp: new Date().toISOString()
+    });
+
+    saveExpenses(expenses);
+    e.target.reset();
+    feedback('success');
+}
+
+function renderFinance() {
+    const expenses = getExpenses();
+    const filterMonth = document.getElementById('financeMonthFilter').value; 
+    const listContainer = document.getElementById('expenseList');
+    if (!listContainer) return;
+
+    const filtered = expenses.filter(ex => ex.timestamp.startsWith(filterMonth));
+    
+    let income = 0;
+    let spent = 0;
+    
+    filtered.forEach(ex => {
+        if (ex.type === 'income') income += ex.amount;
+        else spent += ex.amount;
+    });
+
+    const balance = income - spent;
+
+    // Update Header
+    document.getElementById('monthlyTotalDisplay').textContent = formatCurrency(balance);
+    document.getElementById('monthlyIncomeDisplay').textContent = '+' + formatCurrency(income);
+    document.getElementById('monthlySpentDisplay').textContent = '-' + formatCurrency(spent);
+
+    if (filtered.length === 0) {
+        listContainer.innerHTML = `<div class="text-center py-5 text-muted opacity-50">No transactions this month.</div>`;
+        return;
+    }
+
+    listContainer.innerHTML = filtered.map(ex => {
+        const isIncome = ex.type === 'income';
+        return `
+            <div class="expense-item p-3 rounded-4 d-flex justify-content-between align-items-center">
+                <div>
+                    <h6 class="mb-0 fw-bold">${escapeHTML(ex.description)}</h6>
+                    <small class="text-secondary opacity-75">${new Date(ex.timestamp).toLocaleDateString()}</small>
+                </div>
+                <div class="d-flex align-items-center gap-3">
+                    <span class="fw-bold ${isIncome ? 'text-success' : 'text-accent'}">
+                        ${isIncome ? '+' : '-'}${formatCurrency(ex.amount)}
+                    </span>
+                    <button onclick="deleteExpense(${ex.id})" class="btn text-danger p-0 opacity-50">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+function deleteExpense(id) {
+    if (!confirm("Remove this entry?")) return;
+    feedback('delete');
+    const expenses = getExpenses().filter(ex => ex.id !== id);
+    saveExpenses(expenses);
+}
+
+function formatCurrency(val) {
+    return new Intl.NumberFormat('fr-TN', { style: 'currency', currency: 'TND' })
+        .format(val).replace('TND', 'DT');
+}
+
+window.deleteExpense = deleteExpense;
 
 // --- Note / Journal Operations ---
 
@@ -253,11 +438,15 @@ function renderDashboard() {
 let tokenClient;
 let accessToken = null;
 
-function authenticateAndBackup() {
-    feedback('click');
+function authenticateAndBackup(isSilent = false) {
+    if (!isSilent) feedback('click');
     const backupBtn = document.getElementById('backupDriveBtn');
-    backupBtn.disabled = true;
-    backupBtn.innerHTML = '<i class="bi bi-hourglass-split me-2"></i> Connecting to Google...';
+    if (backupBtn) {
+        backupBtn.disabled = true;
+        backupBtn.innerHTML = '<i class="bi bi-hourglass-split me-2"></i> Syncing...';
+    }
+
+    setSyncProgress(10); // Start
 
     // GIS Auth Flow
     tokenClient = google.accounts.oauth2.initTokenClient({
@@ -266,21 +455,53 @@ function authenticateAndBackup() {
         callback: (tokenResponse) => {
             if (tokenResponse && tokenResponse.access_token) {
                 accessToken = tokenResponse.access_token;
-                uploadToDrive();
+                localStorage.setItem('gdrive_token', accessToken);
+                uploadToDrive(isSilent);
+            } else {
+                if (backupBtn) backupBtn.disabled = false;
+                setSyncProgress(100);
             }
         },
     });
 
-    if (accessToken === null) {
-        tokenClient.requestAccessToken({ prompt: 'consent' });
+    const storedToken = localStorage.getItem('gdrive_token');
+    if (storedToken) {
+        accessToken = storedToken;
+        uploadToDrive(isSilent);
     } else {
-        uploadToDrive();
+        tokenClient.requestAccessToken({ prompt: isSilent ? 'none' : 'consent' });
     }
 }
 
-async function uploadToDrive() {
+async function getOrCreateFolder(token) {
+    const query = encodeURIComponent("name = 'Life_Reset_App' and mimeType = 'application/vnd.google-apps.folder' and trashed = false");
+    const searchRes = await fetch(`https://www.googleapis.com/drive/v3/files?q=${query}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+    });
+    const searchData = await searchRes.json();
+
+    if (searchData.files && searchData.files.length > 0) {
+        return searchData.files[0].id;
+    }
+
+    const createRes = await fetch('https://www.googleapis.com/drive/v3/files', {
+        method: 'POST',
+        headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            name: 'Life_Reset_App',
+            mimeType: 'application/vnd.google-apps.folder'
+        })
+    });
+    const createData = await createRes.json();
+    return createData.id;
+}
+
+async function uploadToDrive(isSilent = false) {
     const backupBtn = document.getElementById('backupDriveBtn');
-    backupBtn.innerHTML = '<i class="bi bi-cloud-upload-fill me-2"></i> Uploading Backup...';
+    setSyncProgress(40);
 
     const data = {
         app: "Life Reset",
@@ -288,23 +509,28 @@ async function uploadToDrive() {
         timestamp: new Date().toISOString(),
         history: JSON.parse(localStorage.getItem('life_reset_history')) || [],
         tasks: getTasks(),
-        notes: getNotes()
+        notes: getNotes(),
+        expenses: getExpenses()
     };
 
     const month = new Date().toISOString().substring(0, 7);
     const fileName = `Life_Reset_Backup_${month}.json`;
 
-    const metadata = {
-        name: fileName,
-        mimeType: 'application/json',
-    };
-
-    const file = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-    const form = new FormData();
-    form.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
-    form.append('file', file);
-
     try {
+        const folderId = await getOrCreateFolder(accessToken);
+        setSyncProgress(70);
+
+        const metadata = {
+            name: fileName,
+            mimeType: 'application/json',
+            parents: [folderId]
+        };
+
+        const file = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+        const form = new FormData();
+        form.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
+        form.append('file', file);
+
         const response = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
             method: 'POST',
             headers: new Headers({ 'Authorization': 'Bearer ' + accessToken }),
@@ -312,20 +538,28 @@ async function uploadToDrive() {
         });
 
         if (response.ok) {
-            feedback('success');
-            backupBtn.innerHTML = '<i class="bi bi-cloud-check-fill me-2"></i> Sync Complete!';
-            setTimeout(() => {
-                backupBtn.innerHTML = '<i class="bi bi-cloud-arrow-up-fill me-2"></i> Sync to Drive API';
-                backupBtn.disabled = false;
-            }, 3000);
+            setSyncProgress(100);
+            localStorage.setItem('life_reset_last_sync', new Date().toISOString().substring(0, 10));
+            if (!isSilent) feedback('success');
+            
+            if (backupBtn) {
+                backupBtn.innerHTML = '<i class="bi bi-cloud-check-fill me-2"></i> Synced';
+                setTimeout(() => {
+                    backupBtn.innerHTML = '<i class="bi bi-cloud-arrow-up-fill me-2"></i> Sync Now';
+                    backupBtn.disabled = false;
+                }, 3000);
+            }
+            fetchCloudHistory();
         } else {
             throw new Error('Upload failed');
         }
     } catch (err) {
         console.error(err);
-        alert("Google Drive API Error: Please verify your internet and try again.");
-        backupBtn.disabled = false;
-        backupBtn.innerHTML = '<i class="bi bi-exclamation-triangle-fill me-2"></i> Error';
+        setSyncProgress(100);
+        if (backupBtn) {
+            backupBtn.disabled = false;
+            backupBtn.innerHTML = '<i class="bi bi-arrow-repeat me-2"></i> Error';
+        }
     }
 }
 

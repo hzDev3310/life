@@ -32,9 +32,40 @@ body {
     font-family: 'Inter', sans-serif;
     color: var(--text-primary);
     min-height: 100vh;
-    padding-top: env(safe-area-inset-top);
-    padding-bottom: env(safe-area-inset-bottom);
+    padding-top: max(20px, env(safe-area-inset-top));
+    padding-bottom: max(100px, env(safe-area-inset-bottom));
     overflow-x: hidden;
+}
+
+.sync-progress-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 3px;
+    background: rgba(8, 102, 255, 0.1);
+    z-index: 9999;
+    display: none;
+}
+
+.sync-progress-bar {
+    height: 100%;
+    width: 0%;
+    background: var(--accent-light);
+    box-shadow: 0 0 10px var(--accent-glow);
+    transition: width 0.3s ease;
+}
+
+.cloud-history-item {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--glass-border);
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+
+.cloud-history-item:hover {
+    background: rgba(8, 102, 255, 0.1);
+    border-color: var(--accent-light);
 }
 
 /* ========== NAVBAR STYLES ========== */
@@ -539,7 +570,7 @@ body {
     font-weight: 500;
     cursor: pointer;
     transition: all 0.2s ease;
-    width: 33%;
+    width: 20%;
 }
 
 .tab-item i {
@@ -554,6 +585,34 @@ body {
 .tab-item.active i {
     transform: translateY(-2px);
     text-shadow: 0 0 10px var(--accent-glow);
+}
+
+.finance-bilan-card {
+    background: linear-gradient(135deg, #0866FF, #0046b8);
+    position: relative;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.finance-bilan-card::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    right: -20%;
+    width: 200px;
+    height: 200px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 50%;
+}
+
+.expense-item {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--glass-border);
+    transition: all 0.2s ease;
+}
+
+.expense-item:hover {
+    background: rgba(255, 255, 255, 0.08);
 }
 
 .white-space-pre {
