@@ -495,10 +495,11 @@ function triggerReward() {
     // 1. Confetti Burst
     if (typeof confetti === 'function') {
         confetti({
-            particleCount: 120,
-            spread: 70,
+            particleCount: 150,
+            spread: 80,
             origin: { y: 0.6 },
-            colors: ['#10B981', '#059669', '#A3E635', '#FFFFFF', '#FBBF24']
+            colors: ['#0866FF', '#42b0ff', '#1877F2', '#FFFFFF', '#00DFD8'],
+            zIndex: 10001
         });
     }
 
