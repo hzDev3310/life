@@ -136,7 +136,7 @@ function authenticateAndBackup() {
 
     // GIS Auth Flow
     tokenClient = google.accounts.oauth2.initTokenClient({
-        client_id: '94246102693-placeholder.apps.googleusercontent.com', // User needs to replace with real ID
+        client_id: '973697498735-gpe0557359lefq0fn95kkv2oikd94u4r.apps.googleusercontent.com',
         scope: 'https://www.googleapis.com/auth/drive.file',
         callback: (tokenResponse) => {
             if (tokenResponse && tokenResponse.access_token) {
