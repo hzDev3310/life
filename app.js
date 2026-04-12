@@ -1,4 +1,4 @@
-// app.js - Modern Life Reset Tracker
+import { db, migrateFromLocalStorage, calculateMonthlyBilan } from './src/db.js';
 
 const dopamineMessages = [
     "You're crushing it! 🔥",
@@ -18,28 +18,27 @@ const deleteSound = new Audio('https://assets.mixkit.co/active_storage/sfx/2561/
 
 // Haptic & Sound Utility
 function feedback(type = 'soft') {
-    // Vibrate
     if ("vibrate" in navigator) {
         if (type === 'success') navigator.vibrate([50, 30, 50]);
         else if (type === 'error') navigator.vibrate([100, 50, 100]);
-        else navigator.vibrate(20); // soft tap
+        else navigator.vibrate(20);
     }
-
-    // Play Sound
     if (type === 'success') successSound.play().catch(() => { });
     else if (type === 'click') tapSound.play().catch(() => { });
     else if (type === 'delete') deleteSound.play().catch(() => { });
 }
 
-// Main App Logic
 document.addEventListener('DOMContentLoaded', () => {
     initApp();
 });
 
-function initApp() {
+async function initApp() {
+    // 0. Migrate if needed
+    await migrateFromLocalStorage();
+
     // 1. Initialize Date and check for daily reset
     displayCurrentDate();
-    checkDailyReset();
+    await checkDailyReset();
 
     // 2. Render tasks from storage
     renderTasks();
@@ -68,7 +67,12 @@ function initApp() {
 
     const backupBtn = document.getElementById('backupDriveBtn');
     if (backupBtn) {
-        backupBtn.addEventListener('click', authenticateAndBackup);
+        backupBtn.addEventListener('click', () => authenticateAndBackup(false));
+    }
+
+    const headerSyncBtn = document.getElementById('headerSyncBtn');
+    if (headerSyncBtn) {
+        headerSyncBtn.addEventListener('click', () => authenticateAndBackup(false));
     }
 
     const notifBtn = document.getElementById('enableNotificationsBtn');
@@ -102,11 +106,88 @@ function initApp() {
     registerServiceWorker();
 
     // Initial renders
+    renderDashboard();
     renderNotes();
     renderFinance();
 
-    // 6. Auto Cloud Sync Check
-    setTimeout(autoSyncCheck, 2000); 
+    // Global View Listeners
+    const gDailyBtn = document.getElementById('globalDailyBtn');
+    const gWeeklyBtn = document.getElementById('globalWeeklyBtn');
+    let currentGlobalView = 'daily';
+
+    if (gDailyBtn && gWeeklyBtn) {
+        gDailyBtn.addEventListener('click', () => {
+            currentGlobalView = 'daily';
+            gDailyBtn.classList.add('active-bg');
+            gWeeklyBtn.classList.remove('active-bg');
+            refreshAllViews();
+        });
+        gWeeklyBtn.addEventListener('click', () => {
+            currentGlobalView = 'weekly';
+            gWeeklyBtn.classList.add('active-bg');
+            gDailyBtn.classList.remove('active-bg');
+            refreshAllViews();
+        });
+    }
+
+    function refreshAllViews() {
+        const activeTab = document.querySelector('.app-tab-pane.active').id;
+        if (activeTab === 'ritualsTab') renderTasks();
+        if (activeTab === 'notesTab') renderNotes();
+        if (activeTab === 'financeTab') renderFinance();
+        if (activeTab === 'analysisTab') {
+            if (currentGlobalView === 'weekly') renderWeeklyDashboard();
+            else renderDashboard();
+        }
+    }
+
+    // Export Dashboard Toggles (Legacy Cleanup)
+    const oldDaily = document.getElementById('viewDailyBtn');
+    if (oldDaily) oldDaily.parentElement.remove();
+}
+
+function getWeekNumber(d) {
+    d = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+    d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
+    var yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+    return Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+}
+
+async function renderWeeklyDashboard() {
+    const container = document.getElementById('monthlyStatsContainer');
+    if (!container) return;
+
+    const history = await db.history.orderBy('date').reverse().limit(60).toArray();
+
+    const weeks = {};
+    history.forEach(entry => {
+        const date = new Date(entry.date);
+        const day = date.getDay();
+        const diff = date.getDate() - day + (day === 0 ? -6 : 1);
+        const weekStart = new Date(new Date(entry.date).setDate(diff)).toISOString().substring(0, 10);
+        if (!weeks[weekStart]) weeks[weekStart] = { completed: 0, total: 0 };
+        weeks[weekStart].completed += entry.completedCount || 0;
+        weeks[weekStart].total     += entry.totalCount    || 0;
+    });
+
+    container.innerHTML = Object.keys(weeks).reverse().slice(0, 4).map(weekKey => {
+        const data = weeks[weekKey];
+        const perf = data.total > 0 ? Math.round((data.completed / data.total) * 100) : 0;
+        return `
+            <div class="col-12">
+                <div class="stat-card">
+                    <div class="stat-label mb-1">Week of ${new Date(weekKey).toLocaleDateString()}</div>
+                    <div class="d-flex justify-content-between align-items-end">
+                        <div class="stat-value text-accent">${perf}%</div>
+                        <div class="text-secondary small mb-1">${data.completed}/${data.total} rituals</div>
+                    </div>
+                    <div class="progress-bar-container">
+                        <div class="progress-bar-fill" style="width: ${perf}%"></div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }).join('') || `<div class="col-12 text-center py-5 opacity-50 small">No history yet.</div>`;
 }
 
 function switchTab(tabId) {
@@ -156,7 +237,6 @@ async function fetchCloudHistory() {
     const container = document.getElementById('cloudHistoryList');
     if (!container) return;
 
-    // We reuse the token check from backup logic
     if (typeof gapi === 'undefined' || !localStorage.getItem('gdrive_token')) {
         container.innerHTML = `<div class="text-center py-3 opacity-50 small">Sync required to view history</div>`;
         return;
@@ -179,12 +259,12 @@ async function fetchCloudHistory() {
         container.innerHTML = data.files.slice(0, 5).map(file => {
             const date = new Date(file.createdTime).toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
             return `
-                <div class="cloud-history-item p-3 rounded-4 d-flex justify-content-between align-items-center">
+                <div class="cloud-history-item p-3 rounded-4 d-flex justify-content-between align-items-center" onclick="loadArchivePreview('${file.id}')">
                     <div>
-                        <h6 class="mb-0 fw-bold small">Archive: ${file.name.replace('.json', '')}</h6>
+                        <h6 class="mb-0 fw-bold small">Preview Analysis: ${file.name.replace('.json', '')}</h6>
                         <small class="text-secondary opacity-75">Saved ${date}</small>
                     </div>
-                    <i class="bi bi-cloud-check text-success fs-5"></i>
+                    <i class="bi bi-box-arrow-in-right text-accent fs-5"></i>
                 </div>
             `;
         }).join('');
@@ -195,87 +275,149 @@ async function fetchCloudHistory() {
     }
 }
 
-// --- Finance / Expenses Operations ---
-
-function getExpenses() {
-    return JSON.parse(localStorage.getItem('life_reset_expenses')) || [];
+async function loadArchivePreview(fileId) {
+    feedback('click');
+    setSyncProgress(20);
+    const token = localStorage.getItem('gdrive_token');
+    
+    try {
+        const response = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        setSyncProgress(60);
+        const archiveData = await response.json();
+        
+        if (archiveData && archiveData.history) {
+            // Generate stats from this specific history chunk
+            const stats = processHistoryToStats(archiveData.history);
+            renderDashboard(stats); // Pass specific stats
+            switchTab('analysisTab');
+            setSyncProgress(100);
+            feedback('success');
+        }
+    } catch (err) {
+        console.error("Archive load failed:", err);
+        setSyncProgress(100);
+        alert("Failed to load archive. Please try again.");
+    }
 }
 
-function saveExpenses(expenses) {
-    localStorage.setItem('life_reset_expenses', JSON.stringify(expenses));
+function processHistoryToStats(historyData) {
+    const stats = {};
+    historyData.forEach(entry => {
+        const monthKey = entry.date.substring(0, 7);
+        if (!stats[monthKey]) {
+            stats[monthKey] = { completed: 0, total: 0 };
+        }
+        stats[monthKey].total++;
+        if (entry.status === 'completed') {
+            stats[monthKey].completed++;
+        }
+    });
+
+    Object.keys(stats).forEach(monthKey => {
+        stats[monthKey].avgPerf = Math.round((stats[monthKey].completed / stats[monthKey].total) * 100);
+    });
+
+    return stats;
+}
+
+window.loadArchivePreview = loadArchivePreview;
+
+// --- Finance / Expenses Operations ---
+
+async function getFinances() {
+    return await db.finances.reverse().toArray();
+}
+
+async function saveFinance(expense) {
+    await db.finances.add(expense);
     renderFinance();
 }
 
-function handleAddExpense(e) {
+async function handleAddExpense(e) {
     e.preventDefault();
     const amount = parseFloat(document.getElementById('expenseAmount').value);
     const desc = document.getElementById('expenseDesc').value.trim();
-    // Use submitter to detect which button was clicked
     const type = e.submitter ? e.submitter.getAttribute('data-type') : 'expense';
 
     if (isNaN(amount) || !desc) return;
 
-    const expenses = getExpenses();
-    expenses.unshift({
-        id: Date.now(),
+    const timestamp = new Date();
+    await db.finances.add({
         amount: amount,
         description: desc,
-        type: type, // 'income' or 'expense'
-        timestamp: new Date().toISOString()
+        category: type === 'income' ? 'Income' : 'Expense',
+        date: timestamp.toISOString().split('T')[0],
+        monthYear: timestamp.toISOString().substring(0, 7)
     });
 
-    saveExpenses(expenses);
     e.target.reset();
     feedback('success');
+    renderFinance();
 }
 
-function renderFinance() {
-    const expenses = getExpenses();
+async function renderFinance() {
     const filterMonth = document.getElementById('financeMonthFilter').value; 
     const listContainer = document.getElementById('expenseList');
     if (!listContainer) return;
 
-    const filtered = expenses.filter(ex => ex.timestamp.startsWith(filterMonth));
-    
-    let income = 0;
-    let spent = 0;
-    
-    filtered.forEach(ex => {
-        if (ex.type === 'income') income += ex.amount;
-        else spent += ex.amount;
-    });
+    // Use Advanced Indexed Bilan
+    const bilan = await calculateMonthlyBilan(filterMonth);
+    document.getElementById('monthlyTotalDisplay').textContent = formatCurrency(bilan.total);
+    document.getElementById('monthlyIncomeDisplay').textContent = '+' + formatCurrency(bilan.income);
+    document.getElementById('monthlySpentDisplay').textContent = '-' + formatCurrency(bilan.spent);
 
-    const balance = income - spent;
-
-    // Update Header
-    document.getElementById('monthlyTotalDisplay').textContent = formatCurrency(balance);
-    document.getElementById('monthlyIncomeDisplay').textContent = '+' + formatCurrency(income);
-    document.getElementById('monthlySpentDisplay').textContent = '-' + formatCurrency(spent);
+    const filtered = await db.finances.where('monthYear').equals(filterMonth).reverse().toArray();
+    const isWeekly = document.getElementById('globalWeeklyBtn').classList.contains('active-bg');
 
     if (filtered.length === 0) {
-        listContainer.innerHTML = `<div class="text-center py-5 text-muted opacity-50">No transactions this month.</div>`;
+        listContainer.innerHTML = `<div class="text-center py-5 text-muted opacity-50">No transactions.</div>`;
         return;
     }
 
-    listContainer.innerHTML = filtered.map(ex => {
-        const isIncome = ex.type === 'income';
-        return `
-            <div class="expense-item p-3 rounded-4 d-flex justify-content-between align-items-center">
-                <div>
-                    <h6 class="mb-0 fw-bold">${escapeHTML(ex.description)}</h6>
-                    <small class="text-secondary opacity-75">${new Date(ex.timestamp).toLocaleDateString()}</small>
+    if (isWeekly) {
+        const groups = {};
+        filtered.forEach(ex => {
+            const date = new Date(ex.date);
+            const week = `Week ${getWeekNumber(date)}`;
+            if (!groups[week]) groups[week] = { items: [], balance: 0 };
+            groups[week].items.push(ex);
+            groups[week].balance += (ex.category === 'Income' ? ex.amount : -ex.amount);
+        });
+
+        listContainer.innerHTML = Object.keys(groups).map(week => `
+            <div class="mb-4">
+                <div class="d-flex justify-content-between align-items-center mb-2 border-bottom border-secondary pb-1">
+                    <span class="text-accent small fw-bold" style="opacity: 0.6;">${week}</span>
+                    <span class="small fw-bold ${groups[week].balance >= 0 ? 'text-success' : 'text-danger'}">${formatCurrency(groups[week].balance)}</span>
                 </div>
-                <div class="d-flex align-items-center gap-3">
-                    <span class="fw-bold ${isIncome ? 'text-success' : 'text-accent'}">
-                        ${isIncome ? '+' : '-'}${formatCurrency(ex.amount)}
-                    </span>
-                    <button onclick="deleteExpense(${ex.id})" class="btn text-danger p-0 opacity-50">
-                        <i class="bi bi-trash"></i>
-                    </button>
+                <div class="d-flex flex-column gap-2">
+                    ${groups[week].items.map(ex => renderExpenseHTML(ex)).join('')}
                 </div>
             </div>
-        `;
-    }).join('');
+        `).join('');
+    } else {
+        listContainer.innerHTML = filtered.map(ex => renderExpenseHTML(ex)).join('');
+    }
+}
+
+function renderExpenseHTML(ex) {
+    const isIncome = ex.type === 'income';
+    return `
+        <div class="expense-item p-3 rounded-4 d-flex justify-content-between align-items-center">
+            <div>
+                <h6 class="mb-0 fw-bold small">${escapeHTML(ex.description)}</h6>
+                <small class="text-secondary opacity-75" style="font-size: 0.7rem;">${new Date(ex.timestamp).toLocaleDateString()}</small>
+            </div>
+            <div class="d-flex align-items-center gap-3">
+                <span class="fw-bold small ${isIncome ? 'text-success' : 'text-accent'}">
+                    ${isIncome ? '+' : '-'}${formatCurrency(ex.amount)}
+                </span>
+                <button onclick="deleteExpense(${ex.id})" class="btn text-danger p-0 opacity-50"><i class="bi bi-trash"></i></button>
+            </div>
+        </div>
+    `;
 }
 
 function deleteExpense(id) {
@@ -294,8 +436,15 @@ window.deleteExpense = deleteExpense;
 
 // --- Note / Journal Operations ---
 
-function getNotes() {
-    return JSON.parse(localStorage.getItem('life_reset_notes')) || [];
+let currentNotesPage = 0;
+const notesPerPage = 5;
+
+async function getNotes() {
+    return await db.notes.reverse().toArray();
+}
+
+async function getPaginatedNotes(page, limit) {
+    return await db.notes.orderBy('timestamp').reverse().offset(page * limit).limit(limit).toArray();
 }
 
 function toggleNoteEditor() {
@@ -317,7 +466,7 @@ function formatNote(cmd, value = null) {
     document.getElementById('noteRichContent').focus();
 }
 
-function handleSaveNote() {
+async function handleSaveNote() {
     const title = document.getElementById('noteTitle').value.trim();
     const content = document.getElementById('noteRichContent').innerHTML;
     const plainText = document.getElementById('noteRichContent').innerText.trim();
@@ -328,36 +477,23 @@ function handleSaveNote() {
         return;
     }
 
-    const notes = getNotes();
-    
     if (editingId) {
-        // Update existing
-        const index = notes.findIndex(n => n.id == editingId);
-        if (index !== -1) {
-            notes[index].title = title;
-            notes[index].content = content;
-        }
+        await db.notes.update(parseInt(editingId), { title, content });
     } else {
-        // Create new
-        const newNote = {
-            id: Date.now(),
+        await db.notes.add({
             title: title,
             content: content,
             timestamp: new Date().toLocaleString()
-        };
-        notes.unshift(newNote);
+        });
     }
-
-    localStorage.setItem('life_reset_notes', JSON.stringify(notes));
 
     feedback('success');
     toggleNoteEditor();
     renderNotes();
 }
 
-function openNote(id) {
-    const notes = getNotes();
-    const note = notes.find(n => n.id == id);
+async function openNote(id) {
+    const note = await db.notes.get(id);
     if (!note) return;
 
     feedback('click');
@@ -368,71 +504,197 @@ function openNote(id) {
     editor.classList.add('active');
 }
 
-function renderNotes() {
-    const notes = getNotes();
+async function renderNotes() {
     const container = document.getElementById('notesList');
     if (!container) return;
 
-    if (notes.length === 0) {
-        container.innerHTML = `<div class="text-center py-5 text-muted opacity-50"><i class="bi bi-sticky fs-1 d-block mb-3"></i>No entries yet. Create your first page!</div>`;
+    const notes = await getPaginatedNotes(currentNotesPage, notesPerPage);
+    const totalNotes = await db.notes.count();
+
+    if (notes.length === 0 && currentNotesPage === 0) {
+        container.innerHTML = `<div class="text-center py-5 text-muted opacity-50">No entries yet.</div>`;
         return;
     }
 
-    container.innerHTML = notes.map(note => `
+    container.innerHTML = `
+        <div class="d-flex flex-column gap-3">
+            ${notes.map(note => renderNoteHTML(note)).join('')}
+        </div>
+        
+        <div class="d-flex justify-content-between align-items-center mt-4 p-2">
+            <button class="btn btn-outline-secondary sm rounded-pill" ${currentNotesPage === 0 ? 'disabled' : ''} onclick="changeNotePage(-1)">
+                <i class="bi bi-chevron-left me-1"></i> Prev
+            </button>
+            <span class="small opacity-50 fw-bold">Page ${currentNotesPage + 1}</span>
+            <button class="btn btn-outline-secondary sm rounded-pill" ${(currentNotesPage + 1) * notesPerPage >= totalNotes ? 'disabled' : ''} onclick="changeNotePage(1)">
+                Next <i class="bi bi-chevron-right ms-1"></i>
+            </button>
+        </div>
+    `;
+}
+
+window.changeNotePage = async function(dir) {
+    currentNotesPage += dir;
+    feedback('click');
+    renderNotes();
+};
+
+function renderNoteHTML(note) {
+    return `
         <div class="glass-card-modern p-4 rounded-4 position-relative" onclick="openNote(${note.id})">
             <div class="d-flex justify-content-between align-items-start mb-2">
                 <h5 class="fw-bold text-accent mb-0" style="font-family: 'Outfit', sans-serif;">${escapeHTML(note.title)}</h5>
-                <button onclick="event.stopPropagation(); deleteNote(${note.id})" class="btn text-danger p-1" title="Delete Note">
+                <button onclick="event.stopPropagation(); deleteNote(${note.id})" class="btn text-danger p-1">
                     <i class="bi bi-trash"></i>
                 </button>
             </div>
             <p class="small text-secondary mb-2" style="font-size: 0.75rem;">${note.timestamp}</p>
             <div class="note-body note-preview text-truncate">${escapeHTML(note.content.replace(/<[^>]*>?/gm, ''))}</div>
         </div>
-    `).join('');
+    `;
 }
 
-function deleteNote(id) {
-    if (!confirm("Are you sure you want to delete this note?")) return;
+async function deleteNote(id) {
+    if (!confirm("Delete this note?")) return;
     feedback('delete');
-    let notes = getNotes();
-    notes = notes.filter(n => n.id !== id);
-    localStorage.setItem('life_reset_notes', JSON.stringify(notes));
+    await db.notes.delete(id);
     renderNotes();
 }
 
 window.deleteNote = deleteNote;
 
-function renderDashboard() {
-    const stats = getMonthlyAnalysis();
+async function renderDashboard() {
     const container = document.getElementById('monthlyStatsContainer');
     if (!container) return;
 
-    if (Object.keys(stats).length === 0) {
-        container.innerHTML = `<div class="col-12 text-center py-5 text-muted opacity-50"><i class="bi bi-clock-history fs-1 mb-3 d-block"></i> No rituals history yet. Progress is tracked daily.</div>`;
-        return;
-    }
+    const filterMonth = new Date().toISOString().substring(0, 7);
 
-    container.innerHTML = Object.keys(stats).reverse().map(monthKey => {
-        const data = stats[monthKey];
-        const monthName = new Date(monthKey + "-01").toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
-        
-        return `
-            <div class="col-md-6">
-                <div class="stat-card">
-                    <div class="stat-label mb-1">${monthName}</div>
-                    <div class="d-flex justify-content-between align-items-end">
-                        <div class="stat-value">${data.avgPerf}%</div>
-                        <div class="text-secondary small mb-1">${data.completed}/${data.total} Tasks</div>
-                    </div>
-                    <div class="progress-bar-container">
-                        <div class="progress-bar-fill" style="width: ${data.avgPerf}%"></div>
-                    </div>
+    // 1. Top Bilan Summary
+    const bilan = await calculateMonthlyBilan(filterMonth);
+    
+    // 2. Fetch all for the month
+    const tasks = await db.tasks.toArray();
+    const finances = await db.finances.where('monthYear').equals(filterMonth).toArray();
+
+    // 3. Group by Day
+    const days = {};
+    const dateOptions = { weekday: 'long', month: 'short', day: 'numeric' };
+
+    finances.forEach(ex => {
+        const d = ex.date;
+        if (!days[d]) days[d] = { finances: [], tasks: [], spent: 0, income: 0 };
+        days[d].finances.push(ex);
+        if (ex.category === 'Income') days[d].income += ex.amount;
+        else days[d].spent += ex.amount;
+    });
+
+    tasks.forEach(t => {
+        // Simple heuristic: rituals are daily
+        const d = new Date().toISOString().split('T')[0];
+        if (!days[d]) days[d] = { finances: [], tasks: [], spent: 0, income: 0 };
+        days[d].tasks.push(t);
+    });
+
+    const dayKeys = Object.keys(days).sort().reverse();
+
+    container.innerHTML = `
+        <div class="col-12 mb-4">
+            <div class="finance-bilan-card p-4 rounded-4 shadow-lg text-white">
+                <div class="small opacity-75 mb-1">Monthly Intelligence (${filterMonth})</div>
+                <h1 class="display-6 fw-bold mb-3">${formatCurrency(bilan.total)}</h1>
+                <div class="d-flex justify-content-between small border-top border-white border-opacity-10 pt-2">
+                    <span>Income: <span class="fw-bold">+${formatCurrency(bilan.income)}</span></span>
+                    <span>Spent: <span class="fw-bold">-${formatCurrency(bilan.spent)}</span></span>
                 </div>
             </div>
-        `;
-    }).join('');
+        </div>
+        
+        <div class="col-12">
+            <h6 class="fw-bold mb-4 opacity-50 px-2 d-flex align-items-center"><i class="bi bi-activity me-2"></i> Unified Daily Feed</h6>
+            <div class="d-flex flex-column gap-3">
+                ${dayKeys.map(d => {
+                    const dayData = days[d];
+                    const dateObj = new Date(d);
+                    const formattedDate = dateObj.toLocaleDateString(undefined, dateOptions);
+                    const balance = dayData.income - dayData.spent;
+                    
+                    return `
+                        <div class="glass-card-modern p-4 rounded-4">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <div>
+                                    <h6 class="fw-bold text-accent mb-0">${formattedDate}</h6>
+                                    <small class="text-secondary opacity-75">${d === new Date().toISOString().split('T')[0] ? 'Today' : ''}</small>
+                                </div>
+                                <div class="text-end">
+                                    <div class="small fw-bold ${balance >= 0 ? 'text-success' : 'text-danger'}">
+                                        ${balance > 0 ? '+' : ''}${formatCurrency(balance)}
+                                    </div>
+                                    <small class="text-secondary opacity-50" style="font-size: 0.65rem;">Daily Balance</small>
+                                </div>
+                            </div>
+                            
+                            <div class="row g-3 mt-1">
+                                <div class="col-6">
+                                    <div class="small text-secondary opacity-50 mb-2 fw-bold text-uppercase" style="font-size: 0.6rem; letter-spacing: 0.05rem;">Rituals</div>
+                                    <div class="d-flex flex-column gap-1">
+                                        ${dayData.tasks.slice(0, 3).map(t => `
+                                            <div class="d-flex align-items-center gap-2" style="font-size: 0.75rem;">
+                                                <i class="bi ${t.completed ? 'bi-check-circle-fill text-success' : 'bi-circle text-secondary opacity-25'}"></i>
+                                                <span class="${t.completed ? 'text-decoration-line-through opacity-50' : 'fw-semibold'}">${escapeHTML(t.todo || t.name)}</span>
+                                            </div>
+                                        `).join('') || '<div class="opacity-25 small italic">No activity</div>'}
+                                        ${dayData.tasks.length > 3 ? `<div class="small text-accent mt-1">+${dayData.tasks.length - 3} more</div>` : ''}
+                                    </div>
+                                </div>
+                                <div class="col-6 border-start border-secondary border-opacity-10">
+                                    <div class="small text-secondary opacity-50 mb-2 fw-bold text-uppercase" style="font-size: 0.6rem; letter-spacing: 0.05rem;">Top Spending</div>
+                                    <div class="d-flex flex-column gap-1">
+                                        ${dayData.finances.slice(0, 3).map(f => `
+                                            <div class="d-flex justify-content-between" style="font-size: 0.75rem;">
+                                                <span class="text-truncate me-1">${escapeHTML(f.description)}</span>
+                                                <span class="${f.category === 'Income' ? 'text-success' : 'fw-bold'}">${f.amount}DT</span>
+                                            </div>
+                                        `).join('') || '<div class="opacity-25 small italic">No spending</div>'}
+                                        ${dayData.finances.length > 3 ? `<div class="small text-accent mt-1">+${dayData.finances.length - 3} more</div>` : ''}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }).join('')}
+            </div>
+        </div>
+    `;
 }
+
+async function exportDataAsJSON() {
+    const [tasks, notes, finances, stories, history] = await Promise.all([
+        db.tasks.toArray(),
+        db.notes.toArray(),
+        db.finances.toArray(),
+        db.stories.toArray(),
+        db.history.toArray()
+    ]);
+
+    const backup = {
+        app: 'CoreLife Export',
+        exportedAt: new Date().toISOString(),
+        tasks, notes, finances, stories, history
+    };
+
+    const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href     = url;
+    a.download = `CoreLife_Backup_${new Date().toISOString().split('T')[0]}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    feedback('success');
+}
+
+window.exportDataAsJSON = exportDataAsJSON;
 
 // --- Google Drive API Integration ---
 let tokenClient;
@@ -503,14 +765,18 @@ async function uploadToDrive(isSilent = false) {
     const backupBtn = document.getElementById('backupDriveBtn');
     setSyncProgress(40);
 
+    const [tasks, notes, finances, history] = await Promise.all([
+        db.tasks.toArray(),
+        db.notes.toArray(),
+        db.finances.toArray(),
+        db.history.toArray()
+    ]);
+
     const data = {
-        app: "Life Reset",
-        email: "hamzasayari2024@gmail.com",
+        app: 'CoreLife',
+        email: 'hamzasayari2024@gmail.com',
         timestamp: new Date().toISOString(),
-        history: JSON.parse(localStorage.getItem('life_reset_history')) || [],
-        tasks: getTasks(),
-        notes: getNotes(),
-        expenses: getExpenses()
+        history, tasks, notes, finances
     };
 
     const month = new Date().toISOString().substring(0, 7);
@@ -578,49 +844,51 @@ function handleTestNotification() {
 
 // --- Data Operations ---
 
-function getTasks() {
-    return JSON.parse(localStorage.getItem('life_reset_tasks')) || [];
+async function getTasks() {
+    return await db.tasks.toArray();
 }
 
-function saveTasks(tasks) {
-    localStorage.setItem('life_reset_tasks', JSON.stringify(tasks));
+async function saveTasks(tasks) {
+    // For bulk updates from older logic, we clear and re-add or just update. 
+    // To match user's "instant update" request, we'll keep it simple for now.
+    await db.tasks.clear();
+    await db.tasks.bulkAdd(tasks);
     renderTasks();
     updateProgress();
 }
 
-function checkDailyReset() {
+async function checkDailyReset() {
     const lastStoredStr = localStorage.getItem('life_reset_last_date');
     const today = new Date();
     const todayStr = today.toDateString();
 
     if (lastStoredStr && lastStoredStr !== todayStr) {
-        // Snapshot the previous day
-        const tasks = getTasks();
-        const history = JSON.parse(localStorage.getItem('life_reset_history')) || [];
+        const tasks = await getTasks();
         
-        // Use the stored date to create a snapshot
+        // Snapshot the previous day
         const snapshotDate = new Date(lastStoredStr);
         const dateKey = snapshotDate.toISOString().split('T')[0];
         
-        // Don't add duplicate for the same day
-        if (!history.find(h => h.date === dateKey)) {
-            history.push({
+        const existing = await db.history.where('date').equals(dateKey).first();
+        if (!existing) {
+            await db.history.add({
                 date: dateKey,
-                completedCount: tasks.filter(t => t.isCompleted).length,
+                completedCount: tasks.filter(t => t.completed).length,
                 totalCount: tasks.length,
-                performance: tasks.length > 0 ? Math.round((tasks.filter(t => t.isCompleted).length / tasks.length) * 100) : 0
+                performance: tasks.length > 0 ? Math.round((tasks.filter(t => t.completed).length / tasks.length) * 100) : 0
             });
-            localStorage.setItem('life_reset_history', JSON.stringify(history.slice(-365))); // Keep last year
         }
 
         // Reset for new day
         const resetTasks = tasks.map(task => ({
             ...task,
-            isCompleted: false,
+            completed: 0, // Using user's 'completed' instead of 'isCompleted'
             missed: false,
             lastNotified: null
         }));
-        localStorage.setItem('life_reset_tasks', JSON.stringify(resetTasks));
+        
+        await db.tasks.clear();
+        await db.tasks.bulkAdd(resetTasks);
         localStorage.setItem('life_reset_last_date', todayStr);
         updateMissedStatus();
     } else if (!lastStoredStr) {
@@ -628,50 +896,49 @@ function checkDailyReset() {
     }
 }
 
-function getMonthlyAnalysis() {
-    const history = JSON.parse(localStorage.getItem('life_reset_history')) || [];
+async function getMonthlyAnalysis() {
+    const history = await db.history.orderBy('date').toArray();
     const monthlyStats = {};
 
     history.forEach(day => {
-        const monthKey = day.date.substring(0, 7); // "YYYY-MM"
+        const monthKey = day.date.substring(0, 7);
         if (!monthlyStats[monthKey]) {
             monthlyStats[monthKey] = { completed: 0, total: 0, days: 0, avgPerf: 0 };
         }
-        monthlyStats[monthKey].completed += day.completedCount;
-        monthlyStats[monthKey].total += day.totalCount;
-        monthlyStats[monthKey].days += 1;
+        monthlyStats[monthKey].completed += day.completedCount || 0;
+        monthlyStats[monthKey].total     += day.totalCount     || 0;
+        monthlyStats[monthKey].days      += 1;
     });
 
-    // Calculate averages
     Object.keys(monthlyStats).forEach(month => {
-        const stats = monthlyStats[month];
-        stats.avgPerf = stats.total > 0 ? Math.round((stats.completed / stats.total) * 100) : 0;
+        const s = monthlyStats[month];
+        s.avgPerf = s.total > 0 ? Math.round((s.completed / s.total) * 100) : 0;
     });
 
     return monthlyStats;
 }
 
 // Update missed status based on current time
-function updateMissedStatus() {
-    const tasks = getTasks();
+async function updateMissedStatus() {
+    const tasks = await getTasks();
     const now = new Date();
     const currentTimeStr = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
     let hasChanges = false;
 
     tasks.forEach(task => {
-        if (!task.isCompleted && task.endTime < currentTimeStr) {
+        if (!task.completed && task.endTime < currentTimeStr) {
             if (!task.missed) {
                 task.missed = true;
                 hasChanges = true;
             }
-        } else if (task.missed && !task.isCompleted && task.endTime >= currentTimeStr) {
+        } else if (task.missed && !task.completed && task.endTime >= currentTimeStr) {
             task.missed = false;
             hasChanges = true;
         }
     });
 
     if (hasChanges) {
-        saveTasks(tasks);
+        await saveTasks(tasks);
     }
 }
 
@@ -685,8 +952,8 @@ function displayCurrentDate() {
     }
 }
 
-function updateProgress() {
-    const tasks = getTasks();
+async function updateProgress() {
+    const tasks = await getTasks();
     const progressText = document.getElementById('progressText');
 
     if (tasks.length === 0) {
@@ -694,94 +961,82 @@ function updateProgress() {
         return;
     }
 
-    const completedCount = tasks.filter(t => t.isCompleted).length;
+    const completedCount = tasks.filter(t => t.completed).length;
     const progress = Math.round((completedCount / tasks.length) * 100);
     if (progressText) progressText.textContent = `${progress}%`;
 }
 
-function renderTasks() {
-    const tasks = getTasks();
+async function renderTasks() {
     const taskList = document.getElementById('taskList');
     const progressText = document.getElementById('progressText');
-
     if (!taskList) return;
 
     // Update missed status before rendering
-    updateMissedStatus();
-    const freshTasks = getTasks();
+    await updateMissedStatus();
+    const freshTasks = await getTasks();
 
     if (freshTasks.length === 0) {
-        taskList.innerHTML = `
-            <div class="empty-state">
-                <i class="bi bi-calendar-check"></i>
-                <p class="mb-0">No habits yet. Add your first ritual above!</p>
-            </div>
-        `;
+        taskList.innerHTML = `<div class="empty-state"><i class="bi bi-calendar-check"></i><p class="mb-0">No habits yet.</p></div>`;
         if (progressText) progressText.textContent = '0%';
         return;
     }
 
     let completedCount = 0;
-    const now = new Date();
-    const currentTimeStr = now.toTimeString().substring(0, 5);
-
-    // Sort tasks by start time
     freshTasks.sort((a, b) => a.startTime.localeCompare(b.startTime));
 
     taskList.innerHTML = freshTasks.map(task => {
-        if (task.isCompleted) completedCount++;
-
-        const isMissed = !task.isCompleted && task.missed;
-        const completedClass = task.isCompleted ? 'completed' : '';
-        const missedClass = isMissed ? 'missed' : '';
-
+        if (task.completed) completedCount++;
+        const isMissed = !task.completed && task.missed;
         return `
-            <div class="task-card ${missedClass} ${completedClass}" data-id="${task.id}">
-                <div class="modern-check ${task.isCompleted ? 'completed' : ''}" data-action="toggle" data-id="${task.id}">
-                    ${task.isCompleted ? '<i class="bi bi-check-lg"></i>' : ''}
+            <div class="task-card ${isMissed ? 'missed' : ''} ${task.completed ? 'completed' : ''}" data-id="${task.id}">
+                <div class="modern-check ${task.completed ? 'completed' : ''}" data-action="toggle" data-id="${task.id}">
+                    ${task.completed ? '<i class="bi bi-check-lg"></i>' : ''}
                 </div>
                 <div class="task-content">
-                    <div class="task-title ${task.isCompleted ? 'completed-text' : ''}">${escapeHTML(task.name)}</div>
+                    <div class="task-title ${task.completed ? 'completed-text' : ''}">${escapeHTML(task.todo || task.name)}</div>
                     <div class="time-badge-modern">
-                        <i class="bi bi-clock"></i>
-                        ${task.startTime} — ${task.endTime}
+                        <i class="bi bi-clock"></i> ${task.startTime} — ${task.endTime}
                         ${isMissed ? '<span class="ms-2 text-danger"><i class="bi bi-exclamation-triangle"></i> Missed</span>' : ''}
                     </div>
                 </div>
-                <button class="delete-task-btn" data-action="delete" data-id="${task.id}" title="Delete habit">
-                    <i class="bi bi-trash3"></i>
-                </button>
+                <button class="delete-task-btn" data-action="delete" data-id="${task.id}"><i class="bi bi-trash3"></i></button>
             </div>
         `;
     }).join('');
 
-    // Update progress
     const progress = Math.round((completedCount / freshTasks.length) * 100);
     if (progressText) progressText.textContent = `${progress}%`;
 
-    // Attach event listeners to dynamic elements
-    document.querySelectorAll('[data-action="toggle"]').forEach(el => {
-        el.removeEventListener('click', handleToggle);
-        el.addEventListener('click', handleToggle);
-    });
-
-    document.querySelectorAll('[data-action="delete"]').forEach(el => {
-        el.removeEventListener('click', handleDelete);
-        el.addEventListener('click', handleDelete);
-    });
+    document.querySelectorAll('[data-action="toggle"]').forEach(el => el.onclick = handleToggle);
+    document.querySelectorAll('[data-action="delete"]').forEach(el => el.onclick = handleDeleteTask);
 }
 
 // Event handlers for dynamic elements
-function handleToggle(e) {
+async function handleToggle(e) {
     e.stopPropagation();
     const id = this.getAttribute('data-id');
-    toggleTask(id);
+    const task = await db.tasks.get(id.includes('-') ? id : parseInt(id));
+    if (!task) return;
+    
+    task.completed = task.completed ? 0 : 1;
+    await db.tasks.put(task);
+    
+    if (task.completed) {
+        feedback('success');
+        triggerCelebration();
+    } else {
+        feedback('click');
+    }
+    renderTasks();
 }
 
-function handleDelete(e) {
+async function handleDeleteTask(e) {
     e.stopPropagation();
+    if (!confirm("Delete this habit?")) return;
     const id = this.getAttribute('data-id');
-    deleteTask(id);
+    await db.tasks.delete(id.includes('-') ? id : parseInt(id));
+    feedback('delete');
+    renderTasks();
 }
 
 function handleAddTask(event) {
@@ -882,19 +1137,17 @@ function triggerReward() {
 
 // --- The Interval Engine & Notifications ---
 
-function startIntervalEngine() {
-    // Run every 60 seconds
-    setInterval(() => {
-        checkRappelsAndDeadlines();
-        updateMissedStatus();
+async function startIntervalEngine() {
+    setInterval(async () => {
+        await checkRappelsAndDeadlines();
+        await updateMissedStatus();
         renderTasks();
     }, 60 * 1000);
-    // Also run immediately on load
-    checkRappelsAndDeadlines();
+    await checkRappelsAndDeadlines();
 }
 
-function checkRappelsAndDeadlines() {
-    const tasks = getTasks();
+async function checkRappelsAndDeadlines() {
+    const tasks = await getTasks();
     let hasChanges = false;
 
     const now = new Date();
@@ -902,20 +1155,18 @@ function checkRappelsAndDeadlines() {
     const currentTimeMs = now.getTime();
 
     tasks.forEach(task => {
-        if (task.isCompleted) return;
+        if (task.completed) return;
 
-        // Condition 1: Failure Alert (Deadline passed)
         if (currentTimeStr > task.endTime) {
             if (task.lastNotified !== 'FAILED') {
-                sendNotification("Goal Missed ⏰", `You missed the deadline for: ${task.name}`);
+                sendNotification("Goal Missed ⏰", `You missed: ${task.todo || task.name}`);
                 task.lastNotified = 'FAILED';
                 hasChanges = true;
             }
         }
-        // Condition 2: Reminder (Task is active in its timeframe)
         else if (currentTimeStr >= task.startTime && currentTimeStr <= task.endTime) {
             if (!task.lastNotified || (currentTimeMs - task.lastNotified > 900000)) {
-                sendNotification("Time to Focus! 🎯", `Current task: ${task.name}`);
+                sendNotification("Time to Focus! 🎯", `Current: ${task.todo || task.name}`);
                 task.lastNotified = currentTimeMs;
                 hasChanges = true;
             }
@@ -923,7 +1174,7 @@ function checkRappelsAndDeadlines() {
     });
 
     if (hasChanges) {
-        saveTasks(tasks);
+        await saveTasks(tasks);
     }
 }
 
@@ -1019,9 +1270,10 @@ function registerServiceWorker() {
     }
 }
 
-// Export for global access (for inline event handlers if needed)
-window.toggleTask = toggleTask;
-window.deleteTask = deleteTask;
+// Export for global access
+window.handleToggle = handleToggle;
+window.handleDeleteTask = handleDeleteTask;
 window.deleteNote = deleteNote;
 window.formatNote = formatNote;
 window.openNote = openNote;
+window.renderDashboard = renderDashboard;

@@ -37,16 +37,26 @@
         <div id="syncProgressBar" class="sync-progress-bar"></div>
     </div>
 
-    <div id="tabContent" class="container pb-5 mt-4 wrapper">
+    <div id="tabContent" class="container pb-5 mt-5 wrapper pt-4">
+        <!-- Global View Toggle -->
+        <div class="d-flex gap-2 mb-4 p-1 glass-card-modern rounded-pill" style="max-width: 220px; margin: 0 auto;">
+            <button id="globalDailyBtn" class="btn btn-outline-accent flex-grow-1 py-1 px-3 fw-bold rounded-pill active-bg sm">Daily View</button>
+            <button id="globalWeeklyBtn" class="btn btn-outline-accent flex-grow-1 py-1 px-3 fw-bold rounded-pill sm">Weekly View</button>
+        </div>
         <!-- RITUALS TAB -->
-        <section id="ritualsTab" class="app-tab-pane active">
+        <section id="ritualsTab" class="app-tab-pane">
             <!-- Header & Progress Section -->
             <div class="d-flex justify-content-between align-items-end border-bottom border-secondary pb-3 mb-4"
                 style="border-color: rgba(255,255,255,0.08) !important;">
                 <div>
-                    <div class="date-chip mb-2">
-                        <i class="bi bi-calendar3 me-1"></i>
-                        <span id="currentDateDisplay">Today</span>
+                    <div class="d-flex align-items-center gap-2 mb-2">
+                        <div class="date-chip">
+                            <i class="bi bi-calendar3 me-1"></i>
+                            <span id="currentDateDisplay">Today</span>
+                        </div>
+                        <button id="headerSyncBtn" class="btn alert-btn-modern p-1 px-2 border-0" title="Sync Now" style="font-size: 0.9rem;">
+                            <i class="bi bi-arrow-repeat"></i>
+                        </button>
                     </div>
                     <h2 class="fw-bold mb-0" style="font-family: 'Outfit', sans-serif; font-size: 1.8rem;">Daily Rituals</h2>
                 </div>
@@ -90,8 +100,15 @@
         </section>
 
         <!-- ANALYSIS TAB -->
-        <section id="analysisTab" class="app-tab-pane">
-            <h2 class="fw-bold mb-4" style="font-size: 1.8rem; font-family: 'Outfit', sans-serif;">Data Analysis</h2>
+        <section id="analysisTab" class="app-tab-pane active">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2 class="fw-bold mb-0" style="font-size: 1.8rem; font-family: 'Outfit', sans-serif;">Dashboard</h2>
+                <div class="d-flex gap-2">
+                    <button id="viewDailyBtn" class="btn btn-outline-accent flex-grow-1 py-1 px-3 fw-bold rounded-pill active-bg sm">Daily</button>
+                    <button id="viewWeeklyBtn" class="btn btn-outline-accent flex-grow-1 py-1 px-3 fw-bold rounded-pill sm">Weekly</button>
+                </div>
+            </div>
+            
             <div id="monthlyStatsContainer" class="row g-3">
                 <!-- Stats will be loaded here -->
             </div>
@@ -101,6 +118,14 @@
         <section id="settingsTab" class="app-tab-pane">
             <h2 class="fw-bold mb-4" style="font-size: 1.8rem; font-family: 'Outfit', sans-serif;">Settings</h2>
             
+            <div class="glass-card-modern p-4 rounded-4 mb-4">
+                <h6 class="fw-bold mb-3"><i class="bi bi-file-earmark-code text-accent me-2"></i> Local Backup</h6>
+                <button id="exportJsonBtn" class="btn btn-outline-accent w-100 py-3 fw-bold mb-2" onclick="exportDataAsJSON()">
+                    <i class="bi bi-download me-2"></i> Export Data (JSON)
+                </button>
+                <div class="small text-muted text-center" style="font-size: 0.65rem;">Download a copy of your records to your device</div>
+            </div>
+
             <div class="glass-card-modern p-4 rounded-4 mb-4">
                 <h6 class="fw-bold mb-3"><i class="bi bi-google text-accent me-2"></i> Cloud History</h6>
                 <div id="cloudHistoryList" class="d-flex flex-column gap-2 mb-3">
@@ -211,9 +236,12 @@
         </section>
     </div>
 
-    <!-- Bottom App Tabs -->
     <nav class="app-tabs-nav">
-        <div class="tab-item active" data-tab="ritualsTab">
+        <div class="tab-item active" data-tab="analysisTab">
+            <i class="bi bi-bar-chart"></i>
+            <span>Analysis</span>
+        </div>
+        <div class="tab-item" data-tab="ritualsTab">
             <i class="bi bi-check2-circle"></i>
             <span>Rituals</span>
         </div>
@@ -224,10 +252,6 @@
         <div class="tab-item" data-tab="financeTab">
             <i class="bi bi-wallet2"></i>
             <span>Finance</span>
-        </div>
-        <div class="tab-item" data-tab="analysisTab">
-            <i class="bi bi-bar-chart"></i>
-            <span>Analysis</span>
         </div>
         <div class="tab-item" data-tab="settingsTab">
             <i class="bi bi-person-gear"></i>
@@ -253,7 +277,7 @@
     <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
-    <script src="app.js"></script>
+    <script type="module" src="app.js"></script>
 </body>
 
 </html>

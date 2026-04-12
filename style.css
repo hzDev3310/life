@@ -32,7 +32,7 @@ body {
     font-family: 'Inter', sans-serif;
     color: var(--text-primary);
     min-height: 100vh;
-    padding-top: max(20px, env(safe-area-inset-top));
+    padding-top: max(45px, env(safe-area-inset-top));
     padding-bottom: max(100px, env(safe-area-inset-bottom));
     overflow-x: hidden;
 }
@@ -714,4 +714,34 @@ body {
     body {
         padding-top: 0; /* Align to top on mobile */
     }
+}
+
+.btn-outline-accent {
+    background: rgba(8, 102, 255, 0.05);
+    border: 2px solid rgba(8, 102, 255, 0.3);
+    color: var(--text-primary);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.btn-outline-accent.active-bg {
+    background: var(--accent-primary);
+    border-color: var(--accent-primary);
+    box-shadow: 0 4px 15px var(--accent-glow);
+    color: white;
+}
+
+.btn.sm {
+    font-size: 0.75rem;
+    padding: 6px 16px;
+}
+
+/* CELEBRATION MODAL */
+.celebration-icon {
+    font-size: 3rem;
+    animation: bounce 1s infinite;
+}
+
+@keyframes bounce {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.1); }
 }
