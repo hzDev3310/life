@@ -51,6 +51,16 @@ function initApp() {
         taskForm.addEventListener('submit', handleAddTask);
     }
 
+    // --- Note Events ---
+    const addNoteBtn = document.getElementById('addNoteBtn');
+    if (addNoteBtn) addNoteBtn.addEventListener('click', toggleNoteEditor);
+    
+    const cancelNoteBtn = document.getElementById('cancelNoteBtn');
+    if (cancelNoteBtn) cancelNoteBtn.addEventListener('click', toggleNoteEditor);
+
+    const saveNoteBtn = document.getElementById('saveNoteBtn');
+    if (saveNoteBtn) saveNoteBtn.addEventListener('click', handleSaveNote);
+
     const testBtn = document.getElementById('testNotificationsBtn');
     if (testBtn) {
         testBtn.addEventListener('click', handleTestNotification);
@@ -79,6 +89,9 @@ function initApp() {
 
     // 5. Register Service Worker
     registerServiceWorker();
+
+    // Initial renders
+    renderNotes();
 }
 
 function switchTab(tabId) {
@@ -91,7 +104,82 @@ function switchTab(tabId) {
     document.getElementById(tabId).classList.add('active');
 
     if (tabId === 'analysisTab') renderDashboard();
+    if (tabId === 'notesTab') renderNotes();
 }
+
+// --- Note / Journal Operations ---
+
+function getNotes() {
+    return JSON.parse(localStorage.getItem('life_reset_notes')) || [];
+}
+
+function toggleNoteEditor() {
+    feedback('click');
+    const editor = document.getElementById('noteEditor');
+    editor.classList.toggle('d-none');
+    document.getElementById('noteTitle').value = '';
+    document.getElementById('noteContent').value = '';
+}
+
+function handleSaveNote() {
+    const title = document.getElementById('noteTitle').value.trim();
+    const content = document.getElementById('noteContent').value.trim();
+
+    if (!title || !content) {
+        alert("Please provide both a title and content for your note.");
+        return;
+    }
+
+    const newNote = {
+        id: Date.now(),
+        title: title,
+        content: content,
+        timestamp: new Date().toLocaleString()
+    };
+
+    const notes = getNotes();
+    notes.unshift(newNote); // Newest first
+    localStorage.setItem('life_reset_notes', JSON.stringify(notes));
+
+    feedback('success');
+    toggleNoteEditor();
+    renderNotes();
+}
+
+function renderNotes() {
+    const notes = getNotes();
+    const container = document.getElementById('notesList');
+    if (!container) return;
+
+    if (notes.length === 0) {
+        container.innerHTML = `<div class="text-center py-5 text-muted opacity-50"><i class="bi bi-sticky fs-1 d-block mb-3"></i>No notes yet. Start journaling your journey!</div>`;
+        return;
+    }
+
+    container.innerHTML = notes.map(note => `
+        <div class="glass-card-modern p-4 rounded-4 position-relative">
+            <div class="d-flex justify-content-between align-items-start mb-2">
+                <h5 class="fw-bold text-accent mb-0" style="font-family: 'Outfit', sans-serif;">${escapeHTML(note.title)}</h5>
+                <button onclick="deleteNote(${note.id})" class="btn text-danger p-1" title="Delete Note">
+                    <i class="bi bi-trash"></i>
+                </button>
+            </div>
+            <p class="small text-secondary mb-3" style="font-size: 0.75rem;">${note.timestamp}</p>
+            <div class="note-body white-space-pre">${escapeHTML(note.content)}</div>
+        </div>
+    `).join('');
+}
+
+function deleteNote(id) {
+    if (!confirm("Are you sure you want to delete this note?")) return;
+    feedback('delete');
+    let notes = getNotes();
+    notes = notes.filter(n => n.id !== id);
+    localStorage.setItem('life_reset_notes', JSON.stringify(notes));
+    renderNotes();
+}
+
+window.deleteNote = deleteNote;
 
 function renderDashboard() {
     const stats = getMonthlyAnalysis();
@@ -162,7 +250,8 @@ async function uploadToDrive() {
         email: "hamzasayari2024@gmail.com",
         timestamp: new Date().toISOString(),
         history: JSON.parse(localStorage.getItem('life_reset_history')) || [],
-        tasks: getTasks()
+        tasks: getTasks(),
+        notes: getNotes()
     };
 
     const month = new Date().toISOString().substring(0, 7);

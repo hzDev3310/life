@@ -120,6 +120,31 @@
                 </div>
             </div>
         </section>
+
+        <!-- NOTES TAB -->
+        <section id="notesTab" class="app-tab-pane">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2 class="fw-bold mb-0" style="font-size: 1.8rem; font-family: 'Outfit', sans-serif;">Journal</h2>
+                <button id="addNoteBtn" class="btn btn-accent-modern px-3 py-2 rounded-pill shadow-sm">
+                    <i class="bi bi-plus-lg me-1"></i> New Note
+                </button>
+            </div>
+
+            <!-- Note Editor (Hidden by default) -->
+            <div id="noteEditor" class="glass-card-modern p-4 rounded-4 mb-4 d-none">
+                <input type="text" id="noteTitle" class="form-control modern-input mb-3 fw-bold fs-5" placeholder="Note Title...">
+                <textarea id="noteContent" class="form-control modern-input mb-3" rows="8" placeholder="Start writing your thoughts..."></textarea>
+                <div class="d-flex gap-2">
+                    <button id="saveNoteBtn" class="btn btn-accent-modern flex-grow-1 py-2 fw-bold">Save Note</button>
+                    <button id="cancelNoteBtn" class="btn alert-btn-modern py-2">Cancel</button>
+                </div>
+            </div>
+
+            <!-- Notes List -->
+            <div id="notesList" class="d-flex flex-column gap-3">
+                <!-- Notes will render here -->
+            </div>
+        </section>
     </div>
 
     <!-- Bottom App Tabs -->
@@ -127,6 +152,10 @@
         <div class="tab-item active" data-tab="ritualsTab">
             <i class="bi bi-check2-circle"></i>
             <span>Rituals</span>
+        </div>
+        <div class="tab-item" data-tab="notesTab">
+            <i class="bi bi-journal-text"></i>
+            <span>Journal</span>
         </div>
         <div class="tab-item" data-tab="analysisTab">
             <i class="bi bi-bar-chart"></i>
