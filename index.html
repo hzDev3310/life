@@ -132,8 +132,20 @@
 
             <!-- Note Editor (Hidden by default) -->
             <div id="noteEditor" class="glass-card-modern p-4 rounded-4 mb-4 d-none">
-                <input type="text" id="noteTitle" class="form-control modern-input mb-3 fw-bold fs-5" placeholder="Note Title...">
-                <textarea id="noteContent" class="form-control modern-input mb-3" rows="8" placeholder="Start writing your thoughts..."></textarea>
+                <input type="text" id="noteTitle" class="form-control modern-input mb-2 fw-bold fs-5" placeholder="Note Title...">
+                
+                <!-- Rich Text Toolbar -->
+                <div class="note-toolbar mb-2 d-flex gap-2">
+                    <button type="button" class="btn btn-sm btn-dark border-0 p-2" onclick="formatNote('bold')" title="Bold"><i class="bi bi-type-bold"></i></button>
+                    <button type="button" class="btn btn-sm btn-dark border-0 p-2" onclick="formatNote('italic')" title="Italic"><i class="bi bi-type-italic"></i></button>
+                    <div class="color-picker-wrapper">
+                        <input type="color" id="noteColorPicker" class="color-input" onchange="formatNote('foreColor', this.value)" title="Font Color">
+                        <i class="bi bi-palette-fill"></i>
+                    </div>
+                </div>
+
+                <div id="noteRichContent" contenteditable="true" class="form-control modern-input mb-3" style="min-height: 200px; height: auto; overflow-y: auto;" placeholder="Start writing your thoughts..."></div>
+
                 <div class="d-flex gap-2">
                     <button id="saveNoteBtn" class="btn btn-accent-modern flex-grow-1 py-2 fw-bold">Save Note</button>
                     <button id="cancelNoteBtn" class="btn alert-btn-modern py-2">Cancel</button>

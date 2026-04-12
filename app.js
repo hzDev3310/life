@@ -118,14 +118,21 @@ function toggleNoteEditor() {
     const editor = document.getElementById('noteEditor');
     editor.classList.toggle('d-none');
     document.getElementById('noteTitle').value = '';
-    document.getElementById('noteContent').value = '';
+    document.getElementById('noteRichContent').innerHTML = '';
+}
+
+function formatNote(cmd, value = null) {
+    document.execCommand(cmd, false, value);
+    // Focus back if needed
+    document.getElementById('noteRichContent').focus();
 }
 
 function handleSaveNote() {
     const title = document.getElementById('noteTitle').value.trim();
-    const content = document.getElementById('noteContent').value.trim();
+    const content = document.getElementById('noteRichContent').innerHTML;
+    const plainText = document.getElementById('noteRichContent').innerText.trim();
 
-    if (!title || !content) {
+    if (!title || !plainText) {
         alert("Please provide both a title and content for your note.");
         return;
     }
@@ -165,7 +172,7 @@ function renderNotes() {
                 </button>
             </div>
             <p class="small text-secondary mb-3" style="font-size: 0.75rem;">${note.timestamp}</p>
-            <div class="note-body white-space-pre">${escapeHTML(note.content)}</div>
+            <div class="note-body">${note.content}</div>
         </div>
     `).join('');
 }
@@ -751,3 +758,5 @@ function registerServiceWorker() {
 // Export for global access (for inline event handlers if needed)
 window.toggleTask = toggleTask;
 window.deleteTask = deleteTask;
+window.deleteNote = deleteNote;
+window.formatNote = formatNote;
