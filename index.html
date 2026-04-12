@@ -130,31 +130,31 @@
                 </button>
             </div>
 
-            <!-- Note Editor (Hidden by default) -->
-            <div id="noteEditor" class="glass-card-modern p-4 rounded-4 mb-4 d-none">
-                <input type="text" id="noteTitle" class="form-control modern-input mb-2 fw-bold fs-5" placeholder="Note Title...">
+            <!-- Note List View -->
+            <div id="notesList" class="d-flex flex-column gap-3">
+                <!-- Notes will render here -->
+            </div>
+
+            <!-- Full Screen Note Editor Overlay -->
+            <div id="noteEditor" class="full-screen-page">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <button id="cancelNoteBtn" class="btn text-white fs-4 p-0"><i class="bi bi-chevron-left"></i></button>
+                    <h5 class="mb-0 fw-bold">Daily Note</h5>
+                    <button id="saveNoteBtn" class="btn btn-accent-modern px-4 rounded-pill">Save</button>
+                </div>
+
+                <input type="text" id="noteTitle" class="form-control bg-transparent border-0 text-white fs-3 fw-bold mb-2 p-0" placeholder="Untitled Day" style="box-shadow: none;">
                 
-                <!-- Rich Text Toolbar -->
-                <div class="note-toolbar mb-2 d-flex gap-2">
-                    <button type="button" class="btn btn-sm btn-dark border-0 p-2" onclick="formatNote('bold')" title="Bold"><i class="bi bi-type-bold"></i></button>
-                    <button type="button" class="btn btn-sm btn-dark border-0 p-2" onclick="formatNote('italic')" title="Italic"><i class="bi bi-type-italic"></i></button>
+                <div class="note-toolbar d-flex gap-2">
+                    <button type="button" class="btn btn-sm btn-dark border-0 p-2" onclick="formatNote('bold')"><i class="bi bi-type-bold"></i></button>
+                    <button type="button" class="btn btn-sm btn-dark border-0 p-2" onclick="formatNote('italic')"><i class="bi bi-type-italic"></i></button>
                     <div class="color-picker-wrapper">
-                        <input type="color" id="noteColorPicker" class="color-input" onchange="formatNote('foreColor', this.value)" title="Font Color">
+                        <input type="color" id="noteColorPicker" class="color-input" onchange="formatNote('foreColor', this.value)">
                         <i class="bi bi-palette-fill"></i>
                     </div>
                 </div>
 
-                <div id="noteRichContent" contenteditable="true" class="form-control modern-input mb-3" style="min-height: 200px; height: auto; overflow-y: auto;" placeholder="Start writing your thoughts..."></div>
-
-                <div class="d-flex gap-2">
-                    <button id="saveNoteBtn" class="btn btn-accent-modern flex-grow-1 py-2 fw-bold">Save Note</button>
-                    <button id="cancelNoteBtn" class="btn alert-btn-modern py-2">Cancel</button>
-                </div>
-            </div>
-
-            <!-- Notes List -->
-            <div id="notesList" class="d-flex flex-column gap-3">
-                <!-- Notes will render here -->
+                <div id="noteRichContent" contenteditable="true" class="note-editor-content" placeholder="Type your daily entry here..."></div>
             </div>
         </section>
     </div>

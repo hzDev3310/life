@@ -116,9 +116,14 @@ function getNotes() {
 function toggleNoteEditor() {
     feedback('click');
     const editor = document.getElementById('noteEditor');
-    editor.classList.toggle('d-none');
-    document.getElementById('noteTitle').value = '';
-    document.getElementById('noteRichContent').innerHTML = '';
+    editor.classList.toggle('active');
+    
+    // Clear if opening for new note (optional, depending on flow)
+    if (!editor.classList.contains('active')) {
+        document.getElementById('noteTitle').value = '';
+        document.getElementById('noteRichContent').innerHTML = '';
+        editor.removeAttribute('data-editing-id');
+    }
 }
 
 function formatNote(cmd, value = null) {
@@ -131,26 +136,51 @@ function handleSaveNote() {
     const title = document.getElementById('noteTitle').value.trim();
     const content = document.getElementById('noteRichContent').innerHTML;
     const plainText = document.getElementById('noteRichContent').innerText.trim();
+    const editingId = document.getElementById('noteEditor').getAttribute('data-editing-id');
 
     if (!title || !plainText) {
-        alert("Please provide both a title and content for your note.");
+        alert("Please provide both a title and content.");
         return;
     }
 
-    const newNote = {
-        id: Date.now(),
-        title: title,
-        content: content,
-        timestamp: new Date().toLocaleString()
-    };
-
     const notes = getNotes();
-    notes.unshift(newNote); // Newest first
+    
+    if (editingId) {
+        // Update existing
+        const index = notes.findIndex(n => n.id == editingId);
+        if (index !== -1) {
+            notes[index].title = title;
+            notes[index].content = content;
+        }
+    } else {
+        // Create new
+        const newNote = {
+            id: Date.now(),
+            title: title,
+            content: content,
+            timestamp: new Date().toLocaleString()
+        };
+        notes.unshift(newNote);
+    }
+
     localStorage.setItem('life_reset_notes', JSON.stringify(notes));
 
     feedback('success');
     toggleNoteEditor();
     renderNotes();
+}
+
+function openNote(id) {
+    const notes = getNotes();
+    const note = notes.find(n => n.id == id);
+    if (!note) return;
+
+    feedback('click');
+    const editor = document.getElementById('noteEditor');
+    document.getElementById('noteTitle').value = note.title;
+    document.getElementById('noteRichContent').innerHTML = note.content;
+    editor.setAttribute('data-editing-id', id);
+    editor.classList.add('active');
 }
 
 function renderNotes() {
@@ -159,20 +189,20 @@ function renderNotes() {
     if (!container) return;
 
     if (notes.length === 0) {
-        container.innerHTML = `<div class="text-center py-5 text-muted opacity-50"><i class="bi bi-sticky fs-1 d-block mb-3"></i>No notes yet. Start journaling your journey!</div>`;
+        container.innerHTML = `<div class="text-center py-5 text-muted opacity-50"><i class="bi bi-sticky fs-1 d-block mb-3"></i>No entries yet. Create your first page!</div>`;
         return;
     }
 
     container.innerHTML = notes.map(note => `
-        <div class="glass-card-modern p-4 rounded-4 position-relative">
+        <div class="glass-card-modern p-4 rounded-4 position-relative" onclick="openNote(${note.id})">
             <div class="d-flex justify-content-between align-items-start mb-2">
                 <h5 class="fw-bold text-accent mb-0" style="font-family: 'Outfit', sans-serif;">${escapeHTML(note.title)}</h5>
-                <button onclick="deleteNote(${note.id})" class="btn text-danger p-1" title="Delete Note">
+                <button onclick="event.stopPropagation(); deleteNote(${note.id})" class="btn text-danger p-1" title="Delete Note">
                     <i class="bi bi-trash"></i>
                 </button>
             </div>
-            <p class="small text-secondary mb-3" style="font-size: 0.75rem;">${note.timestamp}</p>
-            <div class="note-body">${note.content}</div>
+            <p class="small text-secondary mb-2" style="font-size: 0.75rem;">${note.timestamp}</p>
+            <div class="note-body note-preview text-truncate">${escapeHTML(note.content.replace(/<[^>]*>?/gm, ''))}</div>
         </div>
     `).join('');
 }
@@ -760,3 +790,4 @@ window.toggleTask = toggleTask;
 window.deleteTask = deleteTask;
 window.deleteNote = deleteNote;
 window.formatNote = formatNote;
+window.openNote = openNote;
