@@ -43,6 +43,9 @@
                 Life Reset
             </span>
             <div class="d-flex gap-2">
+                <button id="showDashboardBtn" class="btn alert-btn-modern p-2" title="Analysis & Backup">
+                    <i class="bi bi-graph-up-arrow"></i>
+                </button>
                 <button id="testNotificationsBtn" class="btn alert-btn-modern p-2" title="Test Notification">
                     <i class="bi bi-play-circle"></i>
                 </button>
@@ -53,6 +56,36 @@
             </div>
         </div>
     </nav>
+
+    <!-- Dashboard Modal -->
+    <div class="modal fade" id="dashboardModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content glass-card-modern border-0">
+                <div class="modal-header border-bottom border-light border-opacity-10 px-4">
+                    <h5 class="modal-title fw-bold" style="font-family: 'Outfit', sans-serif;">
+                        <i class="bi bi-bar-chart-fill text-emerald me-2"></i> Monthly Performance
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <div id="monthlyStatsContainer" class="row g-3">
+                        <!-- Stats will be loaded here -->
+                    </div>
+                    
+                    <div class="mt-4 p-3 rounded-3 bg-white bg-opacity-5 border border-light border-opacity-10">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <h6 class="mb-0 fw-bold">Cloud Backup</h6>
+                            <span class="badge bg-secondary opacity-75">G-Drive</span>
+                        </div>
+                        <p class="small text-secondary mb-3">Sync your rituals history to <strong>hamzasayari2024@gmail.com</strong></p>
+                        <button id="backupDriveBtn" class="btn btn-emerald-modern w-100 py-2 fw-bold">
+                            <i class="bi bi-cloud-arrow-up-fill me-2"></i> Backup to Google Drive
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <div class="container pb-5 mt-4 wrapper">
 

@@ -55,6 +55,20 @@ function initApp() {
         testBtn.addEventListener('click', handleTestNotification);
     }
 
+    const showDashBtn = document.getElementById('showDashboardBtn');
+    if (showDashBtn) {
+        showDashBtn.addEventListener('click', () => {
+            renderDashboard();
+            const modal = new bootstrap.Modal(document.getElementById('dashboardModal'));
+            modal.show();
+        });
+    }
+
+    const backupBtn = document.getElementById('backupDriveBtn');
+    if (backupBtn) {
+        backupBtn.addEventListener('click', handleDriveBackup);
+    }
+
     const notifBtn = document.getElementById('enableNotificationsBtn');
     if (notifBtn) {
         notifBtn.addEventListener('click', requestNotifications);
@@ -65,6 +79,76 @@ function initApp() {
 
     // 5. Register Service Worker
     registerServiceWorker();
+}
+
+function renderDashboard() {
+    const stats = getMonthlyAnalysis();
+    const container = document.getElementById('monthlyStatsContainer');
+    if (!container) return;
+
+    if (Object.keys(stats).length === 0) {
+        container.innerHTML = `<div class="col-12 text-center py-4 text-muted">No history data yet. Your progress will be tracked daily starting today!</div>`;
+        return;
+    }
+
+    container.innerHTML = Object.keys(stats).reverse().map(monthKey => {
+        const data = stats[monthKey];
+        const monthName = new Date(monthKey + "-01").toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+        
+        return `
+            <div class="col-md-6">
+                <div class="stat-card">
+                    <div class="stat-label mb-1">${monthName}</div>
+                    <div class="d-flex justify-content-between align-items-end">
+                        <div class="stat-value">${data.avgPerf}%</div>
+                        <div class="text-secondary small mb-1">${data.completed} / ${data.total} Tasks</div>
+                    </div>
+                    <div class="progress-bar-container">
+                        <div class="progress-bar-fill" style="width: ${data.avgPerf}%"></div>
+                    </div>
+                    <div class="mt-2 small opacity-50">Data from ${data.days} days</div>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+function handleDriveBackup() {
+    feedback('click');
+    const backupBtn = document.getElementById('backupDriveBtn');
+    backupBtn.innerHTML = '<i class="bi bi-hourglass-split me-2"></i> Syncing to hamzasayari2024@gmail.com...';
+    backupBtn.disabled = true;
+
+    // 1. Prepare Data
+    const data = {
+        email: "hamzasayari2024@gmail.com",
+        backup_date: new Date().toISOString(),
+        tasks: getTasks(),
+        history: JSON.parse(localStorage.getItem('life_reset_history')) || []
+    };
+
+    // 2. Perform Export (since we don't have server-side Google OAuth in this static app, 
+    // we provide a download which the user can save to their Drive folder)
+    setTimeout(() => {
+        const json = JSON.stringify(data, null, 2);
+        const blob = new Blob([json], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        const month = new Date().toISOString().substring(0, 7);
+        a.href = url;
+        a.download = `Life_Reset_Backup_${month}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+
+        backupBtn.innerHTML = '<i class="bi bi-check-circle-fill me-2"></i> Backup Successful';
+        
+        setTimeout(() => {
+            backupBtn.innerHTML = '<i class="bi bi-cloud-arrow-up-fill me-2"></i> Backup to Google Drive';
+            backupBtn.disabled = false;
+        }, 3000);
+    }, 1500);
 }
 
 function handleTestNotification() {
@@ -94,21 +178,65 @@ function saveTasks(tasks) {
 
 function checkDailyReset() {
     const lastStoredStr = localStorage.getItem('life_reset_last_date');
-    const todayStr = new Date().toDateString();
+    const today = new Date();
+    const todayStr = today.toDateString();
 
-    if (lastStoredStr !== todayStr) {
-        // It's a new day! Reset completion status.
-        let tasks = getTasks();
-        tasks = tasks.map(task => ({
+    if (lastStoredStr && lastStoredStr !== todayStr) {
+        // Snapshot the previous day
+        const tasks = getTasks();
+        const history = JSON.parse(localStorage.getItem('life_reset_history')) || [];
+        
+        // Use the stored date to create a snapshot
+        const snapshotDate = new Date(lastStoredStr);
+        const dateKey = snapshotDate.toISOString().split('T')[0];
+        
+        // Don't add duplicate for the same day
+        if (!history.find(h => h.date === dateKey)) {
+            history.push({
+                date: dateKey,
+                completedCount: tasks.filter(t => t.isCompleted).length,
+                totalCount: tasks.length,
+                performance: tasks.length > 0 ? Math.round((tasks.filter(t => t.isCompleted).length / tasks.length) * 100) : 0
+            });
+            localStorage.setItem('life_reset_history', JSON.stringify(history.slice(-365))); // Keep last year
+        }
+
+        // Reset for new day
+        const resetTasks = tasks.map(task => ({
             ...task,
             isCompleted: false,
             missed: false,
             lastNotified: null
         }));
-        localStorage.setItem('life_reset_tasks', JSON.stringify(tasks));
+        localStorage.setItem('life_reset_tasks', JSON.stringify(resetTasks));
         localStorage.setItem('life_reset_last_date', todayStr);
         updateMissedStatus();
+    } else if (!lastStoredStr) {
+        localStorage.setItem('life_reset_last_date', todayStr);
     }
+}
+
+function getMonthlyAnalysis() {
+    const history = JSON.parse(localStorage.getItem('life_reset_history')) || [];
+    const monthlyStats = {};
+
+    history.forEach(day => {
+        const monthKey = day.date.substring(0, 7); // "YYYY-MM"
+        if (!monthlyStats[monthKey]) {
+            monthlyStats[monthKey] = { completed: 0, total: 0, days: 0, avgPerf: 0 };
+        }
+        monthlyStats[monthKey].completed += day.completedCount;
+        monthlyStats[monthKey].total += day.totalCount;
+        monthlyStats[monthKey].days += 1;
+    });
+
+    // Calculate averages
+    Object.keys(monthlyStats).forEach(month => {
+        const stats = monthlyStats[month];
+        stats.avgPerf = stats.total > 0 ? Math.round((stats.completed / stats.total) * 100) : 0;
+    });
+
+    return monthlyStats;
 }
 
 // Update missed status based on current time

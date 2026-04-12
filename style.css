@@ -21,6 +21,7 @@
     padding: 0;
     box-sizing: border-box;
 
+
 }
 
 body {
@@ -461,4 +462,54 @@ body {
 
 .task-card {
     animation: fadeSlideUp 0.3s ease forwards;
+}
+
+/* ========== DASHBOARD & STATS ========== */
+.glass-card-modern {
+    background: linear-gradient(135deg, #1E293B, #0F172A);
+    backdrop-filter: blur(24px);
+    border: 1px solid var(--glass-border);
+    color: white;
+}
+
+.stat-card {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 20px;
+    padding: 20px;
+    transition: all 0.2s ease;
+}
+
+.stat-card:hover {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: var(--emerald-light);
+}
+
+.stat-value {
+    font-size: 1.8rem;
+    font-weight: 800;
+    font-family: 'Outfit', sans-serif;
+    color: var(--emerald-light);
+}
+
+.stat-label {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.progress-bar-container {
+    height: 6px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    overflow: hidden;
+    margin-top: 10px;
+}
+
+.progress-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #A3E635, var(--emerald-light));
+    border-radius: 10px;
 }
