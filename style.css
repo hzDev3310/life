@@ -4,9 +4,9 @@
 
 
 :root {
-    --emerald-primary: #0F5132;
-    --emerald-light: #10B981;
-    --emerald-glow: rgba(16, 185, 129, 0.4);
+    --accent-primary: #0866FF;
+    --accent-light: #42b0ff;
+    --accent-glow: rgba(8, 102, 255, 0.4);
     --dark-bg-start: #0B1120;
     --dark-bg-end: #030712;
     --glass-bg: rgba(18, 25, 45, 0.7);
@@ -50,7 +50,7 @@ body {
 .navbar-brand {
     font-weight: 800;
     letter-spacing: -0.02em;
-    background: linear-gradient(135deg, #A3E635, var(--emerald-light));
+    background: linear-gradient(135deg, #42b0ff, var(--accent-light));
     -webkit-background-clip: text;
     background-clip: text;
     color: transparent !important;
@@ -59,14 +59,14 @@ body {
 }
 
 .logo-icon {
-    background: linear-gradient(135deg, var(--emerald-light), #059669);
+    background: linear-gradient(135deg, var(--accent-light), #0866FF);
     border-radius: 14px;
     display: flex;
     align-items: center;
     justify-content: center;
     width: 38px;
     height: 38px;
-    box-shadow: 0 6px 14px -4px var(--emerald-glow);
+    box-shadow: 0 6px 14px -4px var(--accent-glow);
 }
 
 .alert-btn-modern {
@@ -81,10 +81,10 @@ body {
 }
 
 .alert-btn-modern:hover {
-    background: rgba(16, 185, 129, 0.2);
-    border-color: var(--emerald-light);
+    background: rgba(8, 102, 255, 0.2);
+    border-color: var(--accent-light);
     transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);
+    box-shadow: 0 4px 12px rgba(8, 102, 255, 0.2);
 }
 
 /* ========== DATE & PROGRESS ========== */
@@ -104,14 +104,14 @@ body {
     backdrop-filter: blur(12px);
     border-radius: 60px;
     padding: 8px 22px;
-    border: 1px solid rgba(16, 185, 129, 0.3);
+    border: 1px solid rgba(66, 176, 255, 0.3);
     box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
 }
 
 .progress-percent {
     font-size: 2rem;
     font-weight: 800;
-    background: linear-gradient(135deg, #A3E635, var(--emerald-light));
+    background: linear-gradient(135deg, #42b0ff, var(--accent-light));
     -webkit-background-clip: text;
     background-clip: text;
     color: transparent;
@@ -135,7 +135,7 @@ body {
 
 .task-card:hover {
     transform: translateY(-3px);
-    border-color: rgba(16, 185, 129, 0.4);
+    border-color: rgba(66, 176, 255, 0.4);
     background: rgba(25, 35, 60, 0.8);
     box-shadow: 0 20px 30px -14px rgba(0, 0, 0, 0.5);
 }
@@ -153,7 +153,7 @@ body {
 /* Completed Task Style */
 .task-card.completed {
     opacity: 0.75;
-    border-color: rgba(16, 185, 129, 0.3);
+    border-color: rgba(66, 176, 255, 0.3);
 }
 
 .task-card.completed .task-title {
@@ -178,14 +178,14 @@ body {
 }
 
 .modern-check:hover {
-    border-color: var(--emerald-light);
+    border-color: var(--accent-light);
     transform: scale(1.05);
 }
 
 .modern-check.completed {
-    background: var(--emerald-light);
-    border-color: var(--emerald-light);
-    box-shadow: 0 0 10px var(--emerald-glow);
+    background: var(--accent-light);
+    border-color: var(--accent-light);
+    box-shadow: 0 0 10px var(--accent-glow);
 }
 
 .modern-check.completed i {
@@ -257,7 +257,7 @@ body {
 }
 
 .add-task-card-modern:hover {
-    border-color: rgba(16, 185, 129, 0.3);
+    border-color: rgba(66, 176, 255, 0.3);
     box-shadow: 0 10px 30px -12px rgba(0, 0, 0, 0.5);
 }
 
@@ -272,8 +272,8 @@ body {
 }
 
 .modern-input:focus {
-    border-color: var(--emerald-light);
-    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.25);
+    border-color: var(--accent-light);
+    box-shadow: 0 0 0 3px rgba(66, 176, 255, 0.25);
     background: rgba(0, 0, 0, 0.6);
     outline: none;
     color: white;
@@ -283,31 +283,31 @@ body {
     color: rgba(255, 255, 255, 0.3);
 }
 
-/* Modern Emerald Button */
-.btn-emerald-modern {
-    background: linear-gradient(95deg, var(--emerald-light), #059669);
+/* Modern Accent Button */
+.btn-accent-modern {
+    background: linear-gradient(95deg, var(--accent-light), #0866FF);
     border: none;
     border-radius: 28px;
     padding: 12px;
     font-weight: 700;
     transition: all 0.25s ease;
-    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+    box-shadow: 0 4px 12px rgba(8, 102, 255, 0.3);
     color: white;
 }
 
-.btn-emerald-modern:hover {
+.btn-accent-modern:hover {
     transform: translateY(-2px);
-    box-shadow: 0 8px 20px rgba(16, 185, 129, 0.4);
+    box-shadow: 0 8px 20px rgba(8, 102, 255, 0.4);
     filter: brightness(1.05);
     color: white;
 }
 
-.btn-emerald-modern:active {
+.btn-accent-modern:active {
     transform: translateY(1px);
 }
 
-.text-emerald {
-    color: var(--emerald-light) !important;
+.text-accent {
+    color: var(--accent-light) !important;
 }
 
 /* ========== DOPAMINE MODAL ========== */
@@ -335,7 +335,7 @@ body {
 
 .dopamine-modal-content {
     background: linear-gradient(145deg, #1E293B, #0F172A);
-    border: 1px solid rgba(16, 185, 129, 0.5);
+    border: 1px solid rgba(8, 102, 255, 0.5);
     max-width: 340px;
     width: 85%;
     transform: scale(0.8) translateY(20px);
@@ -402,7 +402,7 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-    background: var(--emerald-light);
+    background: var(--accent-light);
     border-radius: 10px;
 }
 
@@ -482,14 +482,14 @@ body {
 
 .stat-card:hover {
     background: rgba(255, 255, 255, 0.05);
-    border-color: var(--emerald-light);
+    border-color: var(--accent-light);
 }
 
 .stat-value {
     font-size: 1.8rem;
     font-weight: 800;
     font-family: 'Outfit', sans-serif;
-    color: var(--emerald-light);
+    color: var(--accent-light);
 }
 
 .stat-label {
@@ -510,7 +510,7 @@ body {
 
 .progress-bar-fill {
     height: 100%;
-    background: linear-gradient(90deg, #A3E635, var(--emerald-light));
+    background: linear-gradient(90deg, #42b0ff, var(--accent-light));
     border-radius: 10px;
 }
 
@@ -548,12 +548,12 @@ body {
 }
 
 .tab-item.active {
-    color: var(--emerald-light);
+    color: var(--accent-light);
 }
 
 .tab-item.active i {
     transform: translateY(-2px);
-    text-shadow: 0 0 10px var(--emerald-glow);
+    text-shadow: 0 0 10px var(--accent-glow);
 }
 
 .app-tab-pane {

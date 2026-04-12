@@ -584,7 +584,7 @@ function requestNotifications() {
         if (permission === "granted") {
             if (btn) {
                 btn.innerHTML = '<i class="bi bi-bell-fill"></i> <span class="d-none d-sm-inline">Enabled</span>';
-                btn.classList.add('btn-emerald-modern');
+                btn.classList.add('btn-accent-modern');
                 btn.classList.remove('alert-btn-modern');
             }
             // Play sound once to "unlock" audio for Safari/Mobile
