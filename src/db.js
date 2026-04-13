@@ -4,7 +4,7 @@ export const db = new Dexie('CoreLifeDB');
 
 db.version(1).stores({
     notes:    '++id, title, content, timestamp',
-    tasks:    '++id, todo, completed, priority',
+    tasks:    '++id, todo, completed, priority, startTime, endTime, missed, lastNotified',
     finances: '++id, amount, description, category, date, monthYear',
     stories:  '++id, entry, mood, timestamp',
     history:  '++id, date'
@@ -39,7 +39,7 @@ export async function migrateFromLocalStorage() {
         if (parsed.length > 0) {
             await db.tasks.bulkAdd(parsed.map(t => ({
                 todo:          t.name || t.todo || 'Unnamed',
-                completed:     t.isCompleted ? 1 : 0,
+                completed:     t.completed !== undefined ? (t.completed ? 1 : 0) : (t.isCompleted ? 1 : 0),
                 priority:      t.priority || 'medium',
                 startTime:     t.startTime || '00:00',
                 endTime:       t.endTime   || '23:59',

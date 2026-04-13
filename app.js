@@ -845,16 +845,39 @@ function handleTestNotification() {
 // --- Data Operations ---
 
 async function getTasks() {
-    return await db.tasks.toArray();
+    const tasks = await db.tasks.toArray();
+    return tasks.map(normalizeTaskRecord);
 }
 
 async function saveTasks(tasks) {
-    // For bulk updates from older logic, we clear and re-add or just update. 
-    // To match user's "instant update" request, we'll keep it simple for now.
+    const resolvedTasks = await Promise.resolve(tasks);
+    const normalizedTasks = resolvedTasks.map(normalizeTaskRecord);
+
+    // For bulk updates from older logic, we clear and re-add so the
+    // current task order and flags stay in sync with the UI.
     await db.tasks.clear();
-    await db.tasks.bulkAdd(tasks);
+    await db.tasks.bulkAdd(normalizedTasks);
     renderTasks();
     updateProgress();
+}
+
+function normalizeTaskRecord(task) {
+    const completed = task.completed !== undefined ? task.completed : task.isCompleted;
+    return {
+        ...task,
+        todo: task.todo || task.name || 'Unnamed',
+        completed: completed ? 1 : 0,
+        priority: task.priority || 'medium',
+        startTime: task.startTime || '00:00',
+        endTime: task.endTime || '23:59',
+        missed: Boolean(task.missed),
+        lastNotified: task.lastNotified || null
+    };
+}
+
+function getTaskKey(id) {
+    const numericId = Number(id);
+    return Number.isNaN(numericId) ? id : numericId;
 }
 
 async function checkDailyReset() {
@@ -890,7 +913,7 @@ async function checkDailyReset() {
         await db.tasks.clear();
         await db.tasks.bulkAdd(resetTasks);
         localStorage.setItem('life_reset_last_date', todayStr);
-        updateMissedStatus();
+        await updateMissedStatus();
     } else if (!lastStoredStr) {
         localStorage.setItem('life_reset_last_date', todayStr);
     }
@@ -993,7 +1016,7 @@ async function renderTasks() {
                     ${task.completed ? '<i class="bi bi-check-lg"></i>' : ''}
                 </div>
                 <div class="task-content">
-                    <div class="task-title ${task.completed ? 'completed-text' : ''}">${escapeHTML(task.todo || task.name)}</div>
+                    <div class="task-title ${task.completed ? 'completed-text' : ''}">${escapeHTML(task.todo)}</div>
                     <div class="time-badge-modern">
                         <i class="bi bi-clock"></i> ${task.startTime} — ${task.endTime}
                         ${isMissed ? '<span class="ms-2 text-danger"><i class="bi bi-exclamation-triangle"></i> Missed</span>' : ''}
@@ -1015,15 +1038,19 @@ async function renderTasks() {
 async function handleToggle(e) {
     e.stopPropagation();
     const id = this.getAttribute('data-id');
-    const task = await db.tasks.get(id.includes('-') ? id : parseInt(id));
+    const task = await db.tasks.get(getTaskKey(id));
     if (!task) return;
     
     task.completed = task.completed ? 0 : 1;
+    if (task.completed) {
+        task.missed = false;
+        task.lastNotified = null;
+    }
     await db.tasks.put(task);
     
     if (task.completed) {
         feedback('success');
-        triggerCelebration();
+        triggerReward();
     } else {
         feedback('click');
     }
@@ -1034,12 +1061,12 @@ async function handleDeleteTask(e) {
     e.stopPropagation();
     if (!confirm("Delete this habit?")) return;
     const id = this.getAttribute('data-id');
-    await db.tasks.delete(id.includes('-') ? id : parseInt(id));
+    await db.tasks.delete(getTaskKey(id));
     feedback('delete');
     renderTasks();
 }
 
-function handleAddTask(event) {
+async function handleAddTask(event) {
     event.preventDefault();
     const name = document.getElementById('taskName')?.value.trim();
     const startTime = document.getElementById('taskStartTime')?.value;
@@ -1052,19 +1079,20 @@ function handleAddTask(event) {
         return;
     }
 
-    const tasks = getTasks();
+    const tasks = await getTasks();
     const newTask = {
-        id: crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(),
-        name,
+        id: crypto.randomUUID ? crypto.randomUUID() : Date.now(),
+        todo: name,
         startTime,
         endTime,
-        isCompleted: false,
+        completed: 0,
+        priority: 'medium',
         missed: false,
         lastNotified: null
     };
 
     tasks.push(newTask);
-    saveTasks(tasks);
+    await saveTasks(tasks);
     feedback('click');
 
     // Reset form
@@ -1080,28 +1108,29 @@ function handleAddTask(event) {
     }, 100);
 }
 
-function toggleTask(id) {
-    const tasks = getTasks();
-    const task = tasks.find(t => t.id === id);
+async function toggleTask(id) {
+    const tasks = await getTasks();
+    const task = tasks.find(t => String(t.id) === String(id));
 
     if (task) {
-        task.isCompleted = !task.isCompleted;
-        if (task.isCompleted) {
+        task.completed = task.completed ? 0 : 1;
+        if (task.completed) {
             task.missed = false;
+            task.lastNotified = null;
             triggerReward();
             feedback('success');
         } else {
             feedback('click');
         }
-        saveTasks(tasks);
+        await saveTasks(tasks);
     }
 }
 
-function deleteTask(id) {
+async function deleteTask(id) {
     if (confirm("Are you sure you want to delete this habit?")) {
-        let tasks = getTasks();
-        tasks = tasks.filter(t => t.id !== id);
-        saveTasks(tasks);
+        let tasks = await getTasks();
+        tasks = tasks.filter(t => String(t.id) !== String(id));
+        await saveTasks(tasks);
         feedback('delete');
     }
 }
@@ -1133,6 +1162,10 @@ function triggerReward() {
             modal.classList.remove('show');
         }, 2500);
     }
+}
+
+function triggerCelebration() {
+    triggerReward();
 }
 
 // --- The Interval Engine & Notifications ---
