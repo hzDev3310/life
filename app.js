@@ -10,6 +10,8 @@ const dopamineMessages = [
     "Another win for the books! 📖"
 ];
 
+let taskToastTimeout = null;
+
 // Sound Assets
 const notificationSound = new Audio('https://assets.mixkit.co/active_storage/sfx/2354/2354-preview.mp3');
 const successSound = new Audio('https://assets.mixkit.co/active_storage/sfx/2019/2019-preview.mp3');
@@ -1010,16 +1012,22 @@ async function renderTasks() {
     taskList.innerHTML = freshTasks.map(task => {
         if (task.completed) completedCount++;
         const isMissed = !task.completed && task.missed;
+        const statusLabel = task.completed ? 'Completed' : (isMissed ? 'Missed' : 'Active');
         return `
             <div class="task-card ${isMissed ? 'missed' : ''} ${task.completed ? 'completed' : ''}" data-id="${task.id}">
                 <div class="modern-check ${task.completed ? 'completed' : ''}" data-action="toggle" data-id="${task.id}">
                     ${task.completed ? '<i class="bi bi-check-lg"></i>' : ''}
                 </div>
                 <div class="task-content">
-                    <div class="task-title ${task.completed ? 'completed-text' : ''}">${escapeHTML(task.todo)}</div>
-                    <div class="time-badge-modern">
-                        <i class="bi bi-clock"></i> ${task.startTime} — ${task.endTime}
-                        ${isMissed ? '<span class="ms-2 text-danger"><i class="bi bi-exclamation-triangle"></i> Missed</span>' : ''}
+                    <div class="d-flex justify-content-between align-items-start gap-2">
+                        <div class="task-title ${task.completed ? 'completed-text' : ''}">${escapeHTML(task.todo)}</div>
+                        <span class="task-status-pill ${task.completed ? 'completed' : isMissed ? 'missed' : ''}">${statusLabel}</span>
+                    </div>
+                    <div class="task-status-row">
+                        <div class="time-badge-modern">
+                            <i class="bi bi-clock"></i> ${task.startTime} — ${task.endTime}
+                        </div>
+                        ${isMissed ? '<span class="task-status-pill missed"><i class="bi bi-exclamation-triangle"></i> Past deadline</span>' : ''}
                     </div>
                 </div>
                 <button class="delete-task-btn" data-action="delete" data-id="${task.id}"><i class="bi bi-trash3"></i></button>
@@ -1136,12 +1144,15 @@ async function deleteTask(id) {
 }
 
 function triggerReward() {
+    const celebrationMessage = dopamineMessages[Math.floor(Math.random() * dopamineMessages.length)];
+
     // 1. Confetti Burst
     if (typeof confetti === 'function') {
         confetti({
-            particleCount: 150,
-            spread: 80,
-            origin: { y: 0.6 },
+            particleCount: 180,
+            spread: 92,
+            startVelocity: 35,
+            origin: { y: 0.65 },
             colors: ['#0866FF', '#42b0ff', '#1877F2', '#FFFFFF', '#00DFD8'],
             zIndex: 10001
         });
@@ -1154,7 +1165,7 @@ function triggerReward() {
 
     if (modal && msgEl) {
         if (titleEl) titleEl.textContent = 'Excellent Work! 🎉';
-        msgEl.textContent = dopamineMessages[Math.floor(Math.random() * dopamineMessages.length)];
+        msgEl.textContent = celebrationMessage;
         modal.classList.add('show');
 
         // Auto hide after 2.5 seconds
@@ -1162,10 +1173,32 @@ function triggerReward() {
             modal.classList.remove('show');
         }, 2500);
     }
+
+    showTaskToast('Task completed', celebrationMessage);
 }
 
 function triggerCelebration() {
     triggerReward();
+}
+
+function showTaskToast(title, message) {
+    const toast = document.getElementById('taskToast');
+    const titleEl = document.getElementById('taskToastTitle');
+    const msgEl = document.getElementById('taskToastMessage');
+
+    if (!toast || !titleEl || !msgEl) return;
+
+    titleEl.textContent = title;
+    msgEl.textContent = message;
+
+    toast.classList.remove('show');
+    void toast.offsetWidth;
+    toast.classList.add('show');
+
+    if (taskToastTimeout) clearTimeout(taskToastTimeout);
+    taskToastTimeout = setTimeout(() => {
+        toast.classList.remove('show');
+    }, 2600);
 }
 
 // --- The Interval Engine & Notifications ---
