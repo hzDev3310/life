@@ -11,6 +11,7 @@ const dopamineMessages = [
 ];
 
 let taskToastTimeout = null;
+let taskToastUndoHandler = null;
 
 // Sound Assets
 const notificationSound = new Audio('https://assets.mixkit.co/active_storage/sfx/2354/2354-preview.mp3');
@@ -103,6 +104,12 @@ async function initApp() {
 
     // 4. Start Interval Engine
     startIntervalEngine();
+
+    document.addEventListener('visibilitychange', async () => {
+        if (!document.hidden) {
+            await checkDailyReset();
+        }
+    });
 
     // 5. Register Service Worker
     registerServiceWorker();
@@ -1058,7 +1065,7 @@ async function handleToggle(e) {
     
     if (task.completed) {
         feedback('success');
-        triggerReward();
+        triggerReward(task.id);
     } else {
         feedback('click');
     }
@@ -1125,7 +1132,7 @@ async function toggleTask(id) {
         if (task.completed) {
             task.missed = false;
             task.lastNotified = null;
-            triggerReward();
+            triggerReward(task.id);
             feedback('success');
         } else {
             feedback('click');
@@ -1143,7 +1150,7 @@ async function deleteTask(id) {
     }
 }
 
-function triggerReward() {
+function triggerReward(taskId = null) {
     const celebrationMessage = dopamineMessages[Math.floor(Math.random() * dopamineMessages.length)];
 
     // 1. Confetti Burst
@@ -1174,22 +1181,51 @@ function triggerReward() {
         }, 2500);
     }
 
-    showTaskToast('Task completed', celebrationMessage);
+    showTaskToast('Task completed', celebrationMessage, taskId);
 }
 
 function triggerCelebration() {
     triggerReward();
 }
 
-function showTaskToast(title, message) {
+async function undoTaskCompletion(taskId) {
+    const task = await db.tasks.get(getTaskKey(taskId));
+    if (!task) return;
+
+    task.completed = 0;
+    task.missed = false;
+    task.lastNotified = null;
+    await db.tasks.put(task);
+    feedback('click');
+    renderTasks();
+}
+
+function showTaskToast(title, message, taskId = null) {
     const toast = document.getElementById('taskToast');
     const titleEl = document.getElementById('taskToastTitle');
     const msgEl = document.getElementById('taskToastMessage');
+    const undoBtn = document.getElementById('taskToastUndo');
 
-    if (!toast || !titleEl || !msgEl) return;
+    if (!toast || !titleEl || !msgEl || !undoBtn) return;
 
     titleEl.textContent = title;
     msgEl.textContent = message;
+    undoBtn.style.display = taskId ? 'inline-flex' : 'none';
+    undoBtn.textContent = taskId ? 'Undo' : '';
+
+    if (taskToastUndoHandler) {
+        undoBtn.removeEventListener('click', taskToastUndoHandler);
+        taskToastUndoHandler = null;
+    }
+
+    if (taskId) {
+        taskToastUndoHandler = async () => {
+            if (taskToastTimeout) clearTimeout(taskToastTimeout);
+            toast.classList.remove('show');
+            await undoTaskCompletion(taskId);
+        };
+        undoBtn.addEventListener('click', taskToastUndoHandler);
+    }
 
     toast.classList.remove('show');
     void toast.offsetWidth;
@@ -1198,6 +1234,10 @@ function showTaskToast(title, message) {
     if (taskToastTimeout) clearTimeout(taskToastTimeout);
     taskToastTimeout = setTimeout(() => {
         toast.classList.remove('show');
+        if (taskToastUndoHandler) {
+            undoBtn.removeEventListener('click', taskToastUndoHandler);
+            taskToastUndoHandler = null;
+        }
     }, 2600);
 }
 
@@ -1205,11 +1245,13 @@ function showTaskToast(title, message) {
 
 async function startIntervalEngine() {
     setInterval(async () => {
+        await checkDailyReset();
         await checkRappelsAndDeadlines();
         await updateMissedStatus();
         renderTasks();
     }, 60 * 1000);
     await checkRappelsAndDeadlines();
+    await checkDailyReset();
 }
 
 async function checkRappelsAndDeadlines() {
