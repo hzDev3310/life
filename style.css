@@ -32,11 +32,19 @@ body {
     font-family: 'Inter', sans-serif;
     color: var(--text-primary);
     min-height: 100vh;
-    padding-top: max(45px, env(safe-area-inset-top));
+    padding-top: 60px;
     padding-bottom: max(100px, env(safe-area-inset-bottom));
     overflow-x: hidden;
 }
-
+.notch-spacer {
+    height: 45px;
+    background: rgb(1, 7, 18);
+    position: fixed;
+    width: 100%;
+    top: 0;
+    left: 0;
+    z-index: 9999;
+}
 .sync-progress-container {
     position: fixed;
     top: 0;
